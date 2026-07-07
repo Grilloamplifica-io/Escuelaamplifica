@@ -57,6 +57,15 @@ export interface Usuario {
   cert: Certificado[];
 }
 
+export interface NuevoUsuarioInput {
+  nombre: string;
+  cargo: string;
+  rol: Rol;
+  contexto: 'oficina' | 'bodega';
+  escuela: string;
+  color: string;
+}
+
 export interface MiembroEquipo {
   nombre: string;
   cumplimiento: number;

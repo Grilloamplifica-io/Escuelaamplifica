@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { USERS } from '../data/mockData';
 
 function titleForPath(pathname: string): string {
   if (pathname === '/') return 'Home';
@@ -16,7 +15,7 @@ function titleForPath(pathname: string): string {
 }
 
 export function Topbar() {
-  const { currentUserId, setCurrentUserId, device, toggleDevice } = useApp();
+  const { currentUserId, setCurrentUserId, users, device, toggleDevice } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -34,7 +33,7 @@ export function Topbar() {
             navigate('/');
           }}
         >
-          {Object.values(USERS).map((u) => (
+          {Object.values(users).map((u) => (
             <option key={u.id} value={u.id}>
               {u.nombre} — {u.cargo}
             </option>
