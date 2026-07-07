@@ -2,40 +2,55 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { escuela } from '../data/mockData';
 import { useCurso } from '../context/AppContext';
+import { muestraAleatoria } from '../utils/random';
+import type { QuizPregunta } from '../types';
+
+const PREGUNTAS_POR_INTENTO = 5;
 
 export function Evaluacion() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const c = useCurso(id);
+  const banco = c.quiz ?? [];
+  const [preguntas, setPreguntas] = useState<QuizPregunta[]>(() => muestraAleatoria(banco, PREGUNTAS_POR_INTENTO));
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
+  const nuevoIntento = () => {
+    setPreguntas(muestraAleatoria(banco, PREGUNTAS_POR_INTENTO));
     setAnswers({});
     setSubmitted(false);
+  };
+
+  useEffect(() => {
+    nuevoIntento();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  if (!c.quiz) {
+  if (banco.length === 0) {
     return <div className="empty">Este curso no tiene evaluación configurada en el prototipo.</div>;
   }
 
   let correctCount = 0;
   if (submitted) {
-    c.quiz.forEach((p, qi) => {
+    preguntas.forEach((p, qi) => {
       if (answers[qi] === p.correcta) correctCount++;
     });
   }
-  const scorePct = submitted ? Math.round((correctCount / c.quiz.length) * 100) : null;
+  const scorePct = submitted ? Math.round((correctCount / preguntas.length) * 100) : null;
   const aprobado = scorePct !== null && scorePct >= 80;
 
   return (
     <div data-fade>
       <div className="eyebrow">{escuela(c.escuela).nombre} · Evaluación de cierre</div>
-      <h1 className="h-title" style={{ marginBottom: 16 }}>
+      <h1 className="h-title" style={{ marginBottom: 4 }}>
         {c.nombre}
       </h1>
+      <div className="muted" style={{ fontSize: 12.5, marginBottom: 16 }}>
+        {preguntas.length} preguntas seleccionadas al azar de un banco de {banco.length}.
+      </div>
 
-      {c.quiz.map((p, qi) => {
+      {preguntas.map((p, qi) => {
         const chosen = answers[qi];
         return (
           <div className="card" style={{ marginBottom: 14 }} key={qi}>
@@ -72,7 +87,7 @@ export function Evaluacion() {
       {!submitted ? (
         <button
           className="btn btn-primary"
-          disabled={Object.keys(answers).length < c.quiz.length}
+          disabled={Object.keys(answers).length < preguntas.length}
           onClick={() => setSubmitted(true)}
         >
           Enviar evaluación
@@ -93,14 +108,8 @@ export function Evaluacion() {
               Ver mi certificado →
             </button>
           ) : (
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                setAnswers({});
-                setSubmitted(false);
-              }}
-            >
-              Reintentar evaluación
+            <button className="btn btn-outline" onClick={nuevoIntento}>
+              Reintentar evaluación (nuevas preguntas)
             </button>
           )}
         </div>

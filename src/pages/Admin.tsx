@@ -4,7 +4,9 @@ import { ESCUELAS, REGLAS, escuela } from '../data/mockData';
 import { BadgeTipo, Crest } from '../components/ui';
 import { useApp } from '../context/AppContext';
 import { claveInicialDeRut } from '../utils/rut';
-import type { Curso, CursoTipo, Modulo, NuevoCursoInput, NuevoUsuarioInput, Rol, Usuario } from '../types';
+import type { Curso, CursoTipo, Modulo, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
+
+const PREGUNTAS_MINIMAS = 5;
 
 type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos';
 
@@ -449,7 +451,7 @@ function AdminCursos() {
         </div>
       )}
 
-      <div className="card">
+      <div className="card" style={{ marginBottom: 16 }}>
         <table>
           <tbody>
             <tr>
@@ -458,23 +460,177 @@ function AdminCursos() {
               <th>Tipo</th>
               <th>Duración</th>
               <th>Módulos</th>
+              <th>Preguntas</th>
             </tr>
-            {cursos.map((c) => (
-              <tr key={c.id}>
-                <td>{c.nombre}</td>
-                <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Crest escuela={escuela(c.escuela)} sm /> {escuela(c.escuela).nombre}
-                </td>
-                <td>
-                  <BadgeTipo tipo={c.tipo} />
-                </td>
-                <td>{c.duracion}</td>
-                <td>{c.modulos.length}</td>
-              </tr>
-            ))}
+            {cursos.map((c) => {
+              const numPreguntas = c.quiz?.length ?? 0;
+              return (
+                <tr key={c.id}>
+                  <td>{c.nombre}</td>
+                  <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Crest escuela={escuela(c.escuela)} sm /> {escuela(c.escuela).nombre}
+                  </td>
+                  <td>
+                    <BadgeTipo tipo={c.tipo} />
+                  </td>
+                  <td>{c.duracion}</td>
+                  <td>{c.modulos.length}</td>
+                  <td>
+                    <span className={`badge ${numPreguntas >= PREGUNTAS_MINIMAS ? 'badge-aprobado' : 'badge-pendiente'}`}>
+                      {numPreguntas} / {PREGUNTAS_MINIMAS} mín.
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+
+      <AdminBancoPreguntas />
+    </div>
+  );
+}
+
+const PREGUNTA_FORM_INICIAL = { q: '', ops: ['', ''], correcta: 0, feedback: '' };
+
+function AdminBancoPreguntas() {
+  const { cursos, addPreguntaACurso } = useApp();
+  const [cursoId, setCursoId] = useState(cursos[0]?.id ?? '');
+  const [form, setForm] = useState(PREGUNTA_FORM_INICIAL);
+
+  const cursoSeleccionado = cursos.find((c) => c.id === cursoId);
+  const banco = cursoSeleccionado?.quiz ?? [];
+
+  const updateOpcion = (idx: number, valor: string) => {
+    setForm((f) => ({ ...f, ops: f.ops.map((op, i) => (i === idx ? valor : op)) }));
+  };
+  const addOpcion = () => setForm((f) => ({ ...f, ops: [...f.ops, ''] }));
+  const removeOpcion = (idx: number) =>
+    setForm((f) => ({
+      ...f,
+      ops: f.ops.filter((_, i) => i !== idx),
+      correcta: f.correcta === idx ? 0 : f.correcta > idx ? f.correcta - 1 : f.correcta,
+    }));
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const opsValidas = form.ops.map((o) => o.trim()).filter(Boolean);
+    if (!cursoSeleccionado || !form.q.trim() || !form.feedback.trim() || opsValidas.length < 2) return;
+    const pregunta: QuizPregunta = { q: form.q.trim(), ops: opsValidas, correcta: form.correcta, feedback: form.feedback.trim() };
+    addPreguntaACurso(cursoSeleccionado.id, pregunta);
+    setForm(PREGUNTA_FORM_INICIAL);
+  };
+
+  return (
+    <div className="card">
+      <div className="eyebrow" style={{ margin: 0 }}>
+        Banco de preguntas por curso
+      </div>
+      <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 16px' }}>
+        Cada evaluación toma {PREGUNTAS_MINIMAS} preguntas al azar del banco del curso — se recomienda cargar al
+        menos {PREGUNTAS_MINIMAS} para que no se repitan siempre las mismas.
+      </div>
+
+      <div className="field" style={{ maxWidth: 360, marginBottom: 18 }}>
+        <label htmlFor="banco-curso">Curso</label>
+        <select id="banco-curso" value={cursoId} onChange={(e) => setCursoId(e.target.value)}>
+          {cursos.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {cursoSeleccionado && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <span className={`badge ${banco.length >= PREGUNTAS_MINIMAS ? 'badge-aprobado' : 'badge-pendiente'}`}>
+              {banco.length} pregunta{banco.length === 1 ? '' : 's'} en el banco
+            </span>
+            {banco.length < PREGUNTAS_MINIMAS && (
+              <span className="muted" style={{ fontSize: 12 }}>
+                Faltan {PREGUNTAS_MINIMAS - banco.length} para el mínimo recomendado
+              </span>
+            )}
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label htmlFor="pregunta-texto">Pregunta</label>
+              <input
+                id="pregunta-texto"
+                required
+                value={form.q}
+                onChange={(e) => setForm((f) => ({ ...f, q: e.target.value }))}
+                placeholder="Ej: ¿Cuál es el primer paso ante...?"
+              />
+            </div>
+
+            <div className="eyebrow" style={{ marginTop: 4 }}>
+              Alternativas (marca la correcta)
+            </div>
+            {form.ops.map((op, i) => (
+              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                <input
+                  type="radio"
+                  name="pregunta-correcta"
+                  checked={form.correcta === i}
+                  onChange={() => setForm((f) => ({ ...f, correcta: i }))}
+                />
+                <input
+                  style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+                  value={op}
+                  onChange={(e) => updateOpcion(i, e.target.value)}
+                  placeholder={`Alternativa ${i + 1}`}
+                />
+                {form.ops.length > 2 && (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => removeOpcion(i)}>
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" className="btn btn-outline btn-sm" onClick={addOpcion} style={{ marginBottom: 14 }}>
+              + Agregar alternativa
+            </button>
+
+            <div className="field" style={{ marginBottom: 14 }}>
+              <label htmlFor="pregunta-feedback">Feedback (se muestra tras responder)</label>
+              <input
+                id="pregunta-feedback"
+                required
+                value={form.feedback}
+                onChange={(e) => setForm((f) => ({ ...f, feedback: e.target.value }))}
+                placeholder="Ej: Correcto: la prioridad es..."
+              />
+            </div>
+            <button className="btn btn-accent" type="submit">
+              + Agregar pregunta al banco
+            </button>
+          </form>
+
+          <div className="divider" />
+          <div className="eyebrow">Preguntas cargadas</div>
+          {banco.length ? (
+            banco.map((p, i) => (
+              <div key={i} style={{ padding: '10px 0', borderBottom: i < banco.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ fontWeight: 600, fontSize: 13.5 }}>
+                  {i + 1}. {p.q}
+                </div>
+                <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                  Correcta: {p.ops[p.correcta]}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="muted" style={{ fontSize: 13 }}>
+              Este curso aún no tiene preguntas cargadas.
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

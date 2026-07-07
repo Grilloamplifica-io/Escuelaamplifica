@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { CURSOS, USERS } from '../data/mockData';
-import type { Curso, NuevoCursoInput, NuevoUsuarioInput, Usuario } from '../types';
+import type { Curso, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Usuario } from '../types';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 
 type Device = 'desktop' | 'mobile';
@@ -16,6 +16,7 @@ interface AppContextValue {
   addUser: (input: NuevoUsuarioInput) => Usuario;
   cursos: Curso[];
   addCurso: (input: NuevoCursoInput) => Curso;
+  addPreguntaACurso: (cursoId: string, pregunta: QuizPregunta) => void;
   device: Device;
   toggleDevice: () => void;
   simMode: boolean;
@@ -78,6 +79,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nuevo: Curso = { id, ...input };
       setCursos((prev) => [...prev, nuevo]);
       return nuevo;
+    },
+    addPreguntaACurso: (cursoId, pregunta) => {
+      setCursos((prev) =>
+        prev.map((c) => (c.id === cursoId ? { ...c, quiz: [...(c.quiz ?? []), pregunta] } : c)),
+      );
     },
     device,
     toggleDevice: () => setDevice((d) => (d === 'mobile' ? 'desktop' : 'mobile')),
