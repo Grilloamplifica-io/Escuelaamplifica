@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
 import { NAV_ITEMS } from '../nav';
-import { useApp } from '../context/AppContext';
+import { useCurrentUser } from '../context/AppContext';
 
 export function BottomNav() {
-  const { me } = useApp();
+  const me = useCurrentUser();
   const items = NAV_ITEMS.filter((i) => !i.roles || i.roles.includes(me.rol));
 
   return (

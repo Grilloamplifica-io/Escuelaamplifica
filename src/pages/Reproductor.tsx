@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { curso } from '../data/mockData';
+import { useCurso } from '../context/AppContext';
 import { iconFor } from '../components/ui';
 
 export function Reproductor() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const c = curso(id);
+  const c = useCurso(id);
   const [moduloIdx, setModuloIdx] = useState(0);
   const [checklistDone, setChecklistDone] = useState<Record<number, boolean>>({});
 

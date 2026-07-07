@@ -52,6 +52,7 @@ export interface Usuario {
   contexto: 'oficina' | 'bodega';
   escuela: string;
   color: string;
+  rut: string;
   asign: Record<string, EstadoAsignacion>;
   progreso: Record<string, number>;
   cert: Certificado[];
@@ -64,6 +65,16 @@ export interface NuevoUsuarioInput {
   contexto: 'oficina' | 'bodega';
   escuela: string;
   color: string;
+  rut: string;
+}
+
+export interface NuevoCursoInput {
+  escuela: string;
+  nombre: string;
+  tipo: CursoTipo;
+  duracion: string;
+  nivel: string;
+  modulos: Modulo[];
 }
 
 export interface MiembroEquipo {

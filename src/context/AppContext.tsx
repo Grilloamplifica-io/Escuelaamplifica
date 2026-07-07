@@ -1,15 +1,21 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { CURSOS, USERS } from '../data/mockData';
-import type { NuevoUsuarioInput, Usuario } from '../types';
+import type { Curso, NuevoCursoInput, NuevoUsuarioInput, Usuario } from '../types';
+import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 
 type Device = 'desktop' | 'mobile';
 
 interface AppContextValue {
-  currentUserId: string;
+  currentUserId: string | null;
+  me: Usuario | null;
+  isAuthenticated: boolean;
+  login: (rut: string, clave: string) => Usuario | null;
+  logout: () => void;
   setCurrentUserId: (id: string) => void;
-  me: Usuario;
   users: Record<string, Usuario>;
   addUser: (input: NuevoUsuarioInput) => Usuario;
+  cursos: Curso[];
+  addCurso: (input: NuevoCursoInput) => Curso;
   device: Device;
   toggleDevice: () => void;
   simMode: boolean;
@@ -19,22 +25,33 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 let nextUserSeq = 1;
+let nextCursoSeq = 1;
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<Record<string, Usuario>>(USERS);
-  const [currentUserId, setCurrentUserId] = useState('u1');
+  const [cursos, setCursos] = useState<Curso[]>(CURSOS);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [device, setDevice] = useState<Device>('desktop');
   const [simMode, setSimMode] = useState(false);
 
   const value = useMemo<AppContextValue>(() => ({
     currentUserId,
+    me: currentUserId ? users[currentUserId] : null,
+    isAuthenticated: currentUserId !== null,
+    login: (rut, clave) => {
+      const encontrado = Object.values(users).find((u) => mismoRut(u.rut, rut));
+      if (!encontrado) return null;
+      if (claveInicialDeRut(encontrado.rut) !== soloDigitosRut(clave)) return null;
+      setCurrentUserId(encontrado.id);
+      return encontrado;
+    },
+    logout: () => setCurrentUserId(null),
     setCurrentUserId,
-    me: users[currentUserId],
     users,
     addUser: (input) => {
       const id = `nuevo-${nextUserSeq++}`;
       // Simula el motor de reglas: onboarding obligatorio + cursos de su Escuela, ambos "pendiente".
-      const cursosEscuela = CURSOS.filter((c) => c.escuela === input.escuela).map((c) => c.id);
+      const cursosEscuela = cursos.filter((c) => c.escuela === input.escuela).map((c) => c.id);
       const asign: Usuario['asign'] = { c1: 'pendiente' };
       cursosEscuela.forEach((cid) => {
         if (cid !== 'c1') asign[cid] = 'pendiente';
@@ -47,6 +64,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         contexto: input.contexto,
         escuela: input.escuela,
         color: input.color,
+        rut: input.rut,
         asign,
         progreso: {},
         cert: [],
@@ -54,11 +72,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUsers((prev) => ({ ...prev, [id]: nuevo }));
       return nuevo;
     },
+    cursos,
+    addCurso: (input) => {
+      const id = `nuevo-curso-${nextCursoSeq++}`;
+      const nuevo: Curso = { id, ...input };
+      setCursos((prev) => [...prev, nuevo]);
+      return nuevo;
+    },
     device,
     toggleDevice: () => setDevice((d) => (d === 'mobile' ? 'desktop' : 'mobile')),
     simMode,
     toggleSimMode: () => setSimMode((s) => !s),
-  }), [currentUserId, users, device, simMode]);
+  }), [currentUserId, users, cursos, device, simMode]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
@@ -67,4 +92,17 @@ export function useApp(): AppContextValue {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp debe usarse dentro de <AppProvider>');
   return ctx;
+}
+
+export function useCurrentUser(): Usuario {
+  const { me } = useApp();
+  if (!me) throw new Error('No hay un usuario autenticado');
+  return me;
+}
+
+export function useCurso(id: string): Curso {
+  const { cursos } = useApp();
+  const c = cursos.find((c) => c.id === id);
+  if (!c) throw new Error(`Curso no encontrado: ${id}`);
+  return c;
 }

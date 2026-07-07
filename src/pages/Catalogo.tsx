@@ -1,10 +1,12 @@
-import { CURSOS, escuela } from '../data/mockData';
+import { escuela } from '../data/mockData';
+import { useApp } from '../context/AppContext';
 import { Crest, CourseCard } from '../components/ui';
 import type { Curso } from '../types';
 
 export function Catalogo() {
+  const { cursos: todosCursos } = useApp();
   const grupos: Record<string, Curso[]> = {};
-  CURSOS.forEach((c) => {
+  todosCursos.forEach((c) => {
     (grupos[c.escuela] = grupos[c.escuela] || []).push(c);
   });
 

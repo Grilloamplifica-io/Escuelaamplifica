@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { Curso, EstadoAsignacion, Escuela, ModuloTipo, CursoTipo } from '../types';
 import { escuela } from '../data/mockData';
-import { useApp } from '../context/AppContext';
+import { useCurrentUser } from '../context/AppContext';
 
 export function iconFor(tipo: ModuloTipo): string {
   return { video: '▶', pdf: '▤', checklist: '☑' }[tipo] || '▶';
@@ -36,7 +36,7 @@ export function BadgeTipo({ tipo }: { tipo: CursoTipo }) {
 }
 
 export function CourseCard({ curso: c }: { curso: Curso }) {
-  const { me } = useApp();
+  const me = useCurrentUser();
   const e = escuela(c.escuela);
   const estado = me.asign[c.id];
   return (

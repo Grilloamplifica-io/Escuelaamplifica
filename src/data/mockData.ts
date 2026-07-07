@@ -108,33 +108,31 @@ export const CURSOS: Curso[] = [
   },
 ];
 
-export function curso(id: string): Curso {
-  const c = CURSOS.find((c) => c.id === id);
-  if (!c) throw new Error(`Curso no encontrado: ${id}`);
-  return c;
-}
-
 export const USERS: Record<string, Usuario> = {
   u1: {
     id: 'u1', nombre: 'Camila Soto', cargo: 'Analista Comercial', rol: 'colaborador', contexto: 'oficina', escuela: 'com', color: '#2952E3',
+    rut: '11.111.111-1',
     asign: { c1: 'aprobado', c5: 'desarrollo', c2: 'pendiente', c6: 'aprobado' },
     progreso: { c5: 60 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-9K2L-0091', fecha: '12 may 2026' }, { cursoId: 'c6', codigo: 'AMP-7T4Q-0142', fecha: '02 jun 2026' }],
   },
   u2: {
     id: 'u2', nombre: 'Luis Paredes', cargo: 'Operario de Bodega', rol: 'colaborador', contexto: 'bodega', escuela: 'ope', color: '#57708C',
+    rut: '22.222.222-2',
     asign: { c1: 'aprobado', c3: 'pendiente', c4: 'desarrollo', c2: 'aprobado' },
     progreso: { c4: 40 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-3B7X-0055', fecha: '03 may 2026' }, { cursoId: 'c2', codigo: 'AMP-1M9D-0076', fecha: '20 may 2026' }],
   },
   u3: {
     id: 'u3', nombre: 'Daniela Vidal', cargo: 'Jefa de Sucursal', rol: 'lider', contexto: 'oficina', escuela: 'ope', color: '#C99A2E',
+    rut: '33.333.333-3',
     asign: { c1: 'aprobado', c2: 'aprobado', c7: 'desarrollo' },
     progreso: { c7: 20 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-5H1C-0032', fecha: '28 abr 2026' }],
   },
   u4: {
     id: 'u4', nombre: 'Rosangel Rincón', cargo: 'People Partner', rol: 'people', contexto: 'oficina', escuela: 'per', color: '#7C5CBF',
+    rut: '44.444.444-4',
     asign: { c1: 'aprobado', c2: 'aprobado' },
     progreso: {},
     cert: [],

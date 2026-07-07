@@ -1,12 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { curso, escuela } from '../data/mockData';
-import { useApp } from '../context/AppContext';
+import { escuela } from '../data/mockData';
+import { useCurrentUser, useCurso } from '../context/AppContext';
 
 export function Certificado() {
   const { id = '' } = useParams();
-  const { me: u } = useApp();
+  const u = useCurrentUser();
   const navigate = useNavigate();
-  const c = curso(id);
+  const c = useCurso(id);
   const codigo = 'AMP-' + id.toUpperCase() + '-DEMO';
 
   let qrCells = [];

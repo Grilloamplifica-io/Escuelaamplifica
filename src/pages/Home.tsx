@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
-import { curso, escuela } from '../data/mockData';
+import { useApp, useCurrentUser } from '../context/AppContext';
+import { escuela } from '../data/mockData';
 import { BadgeEstado, iconFor } from '../components/ui';
 import type { EstadoAsignacion } from '../types';
 
 export function Home() {
-  const { me: u } = useApp();
+  const u = useCurrentUser();
+  const { cursos } = useApp();
+  const curso = (id: string) => cursos.find((c) => c.id === id)!;
   const asignEntries = Object.entries(u.asign) as [string, EstadoAsignacion][];
   const counts: Record<string, number> = { pendiente: 0, desarrollo: 0, aprobado: 0 };
   asignEntries.forEach(([, est]) => {

@@ -1,13 +1,13 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { curso, escuela } from '../data/mockData';
-import { useApp } from '../context/AppContext';
+import { escuela } from '../data/mockData';
+import { useCurrentUser, useCurso } from '../context/AppContext';
 import { BadgeEstado, BadgeTipo, Crest } from '../components/ui';
 
 export function CursoPage() {
   const { id = '' } = useParams();
-  const { me } = useApp();
+  const me = useCurrentUser();
   const navigate = useNavigate();
-  const c = curso(id);
+  const c = useCurso(id);
   const e = escuela(c.escuela);
   const estado = me.asign[c.id];
 

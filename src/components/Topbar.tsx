@@ -15,7 +15,7 @@ function titleForPath(pathname: string): string {
 }
 
 export function Topbar() {
-  const { currentUserId, setCurrentUserId, users, device, toggleDevice } = useApp();
+  const { currentUserId, setCurrentUserId, users, device, toggleDevice, logout } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -27,7 +27,7 @@ export function Topbar() {
       <div className="topbar-right">
         <select
           className="picker"
-          value={currentUserId}
+          value={currentUserId ?? ''}
           onChange={(e) => {
             setCurrentUserId(e.target.value);
             navigate('/');
@@ -48,6 +48,16 @@ export function Topbar() {
         </button>
         <button className="icon-btn" title="Notificaciones">
           🔔
+        </button>
+        <button
+          className="icon-btn"
+          title="Cerrar sesión"
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
+        >
+          🚪
         </button>
       </div>
     </div>

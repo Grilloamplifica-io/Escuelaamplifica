@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { curso, escuela } from '../data/mockData';
+import { escuela } from '../data/mockData';
+import { useCurso } from '../context/AppContext';
 
 export function Evaluacion() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const c = curso(id);
+  const c = useCurso(id);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
 

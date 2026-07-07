@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
-import { ESCUELAS, curso, escuela } from '../data/mockData';
+import { useApp, useCurrentUser } from '../context/AppContext';
+import { ESCUELAS, escuela } from '../data/mockData';
 import { BadgeEstado } from '../components/ui';
 import type { EstadoAsignacion } from '../types';
 
 export function Perfil() {
-  const { me: u } = useApp();
+  const u = useCurrentUser();
+  const { cursos } = useApp();
+  const curso = (id: string) => cursos.find((c) => c.id === id)!;
   const navigate = useNavigate();
   const asignEntries = Object.entries(u.asign) as [string, EstadoAsignacion][];
   const globalPct = Math.round(
