@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ESCUELAS, escuela } from '../data/mockData';
 import { BadgeEstado, BadgeTipo, Crest } from '../components/ui';
 import { useApp } from '../context/AppContext';
-import { claveInicialDeRut } from '../utils/rut';
+import { claveInicialDeRut, soloDigitosRut } from '../utils/rut';
+import { COLUMNAS_PLANTILLA, descargarPlantillaUsuarios, leerUsuariosDesdeArchivo, type FilaImportada } from '../utils/importUsuarios';
 import type { Curso, CursoTipo, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
@@ -200,6 +201,8 @@ function AdminUsuarios() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NuevoUsuarioInput>(USUARIO_FORM_INICIAL);
   const [ultimoCreado, setUltimoCreado] = useState<Usuario | null>(null);
+  const [importando, setImportando] = useState(false);
+  const [resultadoImport, setResultadoImport] = useState<{ creados: number; errores: FilaImportada[] } | null>(null);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -210,17 +213,104 @@ function AdminUsuarios() {
     setShowForm(false);
   };
 
+  const handleArchivoImport = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportando(true);
+    setResultadoImport(null);
+    try {
+      const filas = await leerUsuariosDesdeArchivo(file);
+      const rutsExistentes = new Set(Object.values(users).map((u) => soloDigitosRut(u.rut)));
+      let creados = 0;
+      const errores: FilaImportada[] = [];
+      for (const fila of filas) {
+        if (!fila.ok || !fila.input) {
+          errores.push(fila);
+          continue;
+        }
+        const rutLimpio = soloDigitosRut(fila.input.rut);
+        if (rutsExistentes.has(rutLimpio)) {
+          errores.push({ ...fila, ok: false, error: `RUT ${fila.input.rut} ya existe en la Academia.` });
+          continue;
+        }
+        addUser(fila.input);
+        rutsExistentes.add(rutLimpio);
+        creados++;
+      }
+      setResultadoImport({ creados, errores });
+    } catch {
+      setResultadoImport({
+        creados: 0,
+        errores: [{ fila: 0, ok: false, error: 'No se pudo leer el archivo. Verifica que sea un Excel (.xlsx) válido.' }],
+      });
+    } finally {
+      setImportando(false);
+    }
+  };
+
   return (
     <div>
       <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div className="eyebrow" style={{ margin: 0 }}>
             Colaboradores en la Academia
           </div>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? 'Cancelar' : '+ Nuevo colaborador'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn btn-outline btn-sm" onClick={descargarPlantillaUsuarios}>
+              Descargar plantilla
+            </button>
+            <label className="btn btn-outline btn-sm" style={{ margin: 0 }}>
+              {importando ? 'Cargando…' : 'Carga masiva (Excel)'}
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleArchivoImport}
+                disabled={importando}
+                style={{ display: 'none' }}
+              />
+            </label>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowForm((v) => !v)}>
+              {showForm ? 'Cancelar' : '+ Nuevo colaborador'}
+            </button>
+          </div>
         </div>
+        <div className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+          Para cargar varios colaboradores a la vez, descarga la plantilla, complétala en Excel (columnas:{' '}
+          {COLUMNAS_PLANTILLA.join(' · ')}) y súbela con "Carga masiva".
+        </div>
+
+        {resultadoImport && (
+          <div
+            className="card"
+            style={{
+              marginTop: 14,
+              background: resultadoImport.creados > 0 ? 'var(--success-bg)' : 'var(--danger-bg)',
+              border: 'none',
+            }}
+          >
+            <div>
+              <b style={{ color: resultadoImport.creados > 0 ? 'var(--success)' : 'var(--danger)' }}>
+                {resultadoImport.creados > 0
+                  ? `Se crearon ${resultadoImport.creados} colaborador${resultadoImport.creados === 1 ? '' : 'es'}.`
+                  : 'No se creó ningún colaborador.'}
+              </b>
+              {resultadoImport.errores.length > 0 && (
+                <span> {resultadoImport.errores.length} fila{resultadoImport.errores.length === 1 ? '' : 's'} con errores:</span>
+              )}
+            </div>
+            {resultadoImport.errores.length > 0 && (
+              <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12.5 }}>
+                {resultadoImport.errores.map((e, i) => (
+                  <li key={i}>
+                    {e.fila > 0 ? `Fila ${e.fila}: ` : ''}
+                    {e.error}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {showForm && (
           <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
