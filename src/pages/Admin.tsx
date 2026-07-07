@@ -309,25 +309,7 @@ const CURSO_FORM_INICIAL: NuevoCursoInput = {
 function AdminCursos() {
   const { cursos, addCurso } = useApp();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<NuevoCursoInput>(CURSO_FORM_INICIAL);
   const [ultimoCreado, setUltimoCreado] = useState<Curso | null>(null);
-
-  const updateModulo = (idx: number, patch: Partial<Modulo>) => {
-    setForm((f) => ({ ...f, modulos: f.modulos.map((m, i) => (i === idx ? { ...m, ...patch } : m)) }));
-  };
-  const addModuloRow = () => setForm((f) => ({ ...f, modulos: [...f.modulos, { ...MODULO_INICIAL }] }));
-  const removeModuloRow = (idx: number) =>
-    setForm((f) => ({ ...f, modulos: f.modulos.filter((_, i) => i !== idx) }));
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const modulosValidos = form.modulos.filter((m) => m.t.trim());
-    if (!form.nombre.trim() || !form.duracion.trim() || !form.nivel.trim() || modulosValidos.length === 0) return;
-    const creado = addCurso({ ...form, modulos: modulosValidos });
-    setUltimoCreado(creado);
-    setForm(CURSO_FORM_INICIAL);
-    setShowForm(false);
-  };
 
   return (
     <div>
@@ -342,105 +324,20 @@ function AdminCursos() {
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16 }}>
             <div className="divider" />
-            <div className="form-grid">
-              <div className="field">
-                <label htmlFor="curso-nombre">Nombre del curso</label>
-                <input
-                  id="curso-nombre"
-                  required
-                  value={form.nombre}
-                  onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                  placeholder="Ej: Excel Intermedio"
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="curso-escuela">Escuela (materia)</label>
-                <select
-                  id="curso-escuela"
-                  value={form.escuela}
-                  onChange={(e) => setForm((f) => ({ ...f, escuela: e.target.value }))}
-                >
-                  {ESCUELAS.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="curso-tipo">Tipo</label>
-                <select
-                  id="curso-tipo"
-                  value={form.tipo}
-                  onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as CursoTipo }))}
-                >
-                  <option value="interna">Interna</option>
-                  <option value="normativo">Normativo</option>
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="curso-duracion">Duración</label>
-                <input
-                  id="curso-duracion"
-                  required
-                  value={form.duracion}
-                  onChange={(e) => setForm((f) => ({ ...f, duracion: e.target.value }))}
-                  placeholder="Ej: 30 min"
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="curso-nivel">Nivel</label>
-                <input
-                  id="curso-nivel"
-                  required
-                  value={form.nivel}
-                  onChange={(e) => setForm((f) => ({ ...f, nivel: e.target.value }))}
-                  placeholder="Ej: Fundamentos"
-                />
-              </div>
-            </div>
-
-            <div className="eyebrow" style={{ marginTop: 18 }}>
-              Módulos
-            </div>
-            {form.modulos.map((m, i) => (
-              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                <input
-                  style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
-                  value={m.t}
-                  onChange={(e) => updateModulo(i, { t: e.target.value })}
-                  placeholder={`Título del módulo ${i + 1}`}
-                />
-                <select
-                  style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
-                  value={m.tipo}
-                  onChange={(e) => updateModulo(i, { tipo: e.target.value as Modulo['tipo'] })}
-                >
-                  <option value="video">Video</option>
-                  <option value="pdf">PDF</option>
-                  <option value="checklist">Checklist</option>
-                </select>
-                {form.modulos.length > 1 && (
-                  <button type="button" className="btn btn-outline btn-sm" onClick={() => removeModuloRow(i)}>
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
-            <button type="button" className="btn btn-outline btn-sm" onClick={addModuloRow} style={{ marginBottom: 14 }}>
-              + Agregar módulo
-            </button>
-
-            <div className="muted" style={{ fontSize: 12.5, margin: '4px 0 14px' }}>
-              El curso se crea sin evaluación de cierre (se puede sumar más adelante) y queda disponible de inmediato
-              en el Catálogo, dentro de la Escuela elegida.
-            </div>
-            <button className="btn btn-accent" type="submit">
-              Crear curso →
-            </button>
-          </form>
+            <CursoCamposForm
+              idPrefix="nuevo-curso"
+              valorInicial={CURSO_FORM_INICIAL}
+              textoBoton="Crear curso →"
+              notaAlPie="El curso se crea sin evaluación de cierre (se puede sumar más adelante) y queda disponible de inmediato en el Catálogo, dentro de la Escuela elegida."
+              onSubmit={(input) => {
+                const creado = addCurso(input);
+                setUltimoCreado(creado);
+                setShowForm(false);
+              }}
+            />
+          </div>
         )}
       </div>
 
@@ -453,7 +350,7 @@ function AdminCursos() {
 
       <div className="muted" style={{ fontSize: 12.5, margin: '4px 0 14px' }}>
         Cada evaluación toma {PREGUNTAS_MINIMAS} preguntas al azar del banco del curso. Despliega un curso para
-        cargar sus preguntas.
+        editarlo o cargar sus preguntas.
       </div>
 
       {cursos.map((c) => (
@@ -464,8 +361,30 @@ function AdminCursos() {
 }
 
 function CursoConBanco({ curso: c }: { curso: Curso }) {
+  const { editarCurso } = useApp();
+  const [editando, setEditando] = useState(false);
   const [expandido, setExpandido] = useState(false);
   const numPreguntas = c.quiz?.length ?? 0;
+
+  if (editando) {
+    return (
+      <div className="card" style={{ marginBottom: 12 }}>
+        <div className="eyebrow" style={{ marginBottom: 12 }}>
+          Editando: {c.nombre}
+        </div>
+        <CursoCamposForm
+          idPrefix={`editar-${c.id}`}
+          valorInicial={{ escuela: c.escuela, nombre: c.nombre, tipo: c.tipo, duracion: c.duracion, nivel: c.nivel, modulos: c.modulos }}
+          textoBoton="Guardar cambios"
+          onSubmit={(input) => {
+            editarCurso(c.id, input);
+            setEditando(false);
+          }}
+          onCancel={() => setEditando(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="card" style={{ marginBottom: 12 }}>
@@ -481,6 +400,9 @@ function CursoConBanco({ curso: c }: { curso: Curso }) {
         <span className={`badge ${numPreguntas >= PREGUNTAS_MINIMAS ? 'badge-aprobado' : 'badge-pendiente'}`}>
           {numPreguntas} / {PREGUNTAS_MINIMAS} preguntas
         </span>
+        <button className="btn btn-outline btn-sm" onClick={() => setEditando(true)}>
+          Editar
+        </button>
         <button className="btn btn-outline btn-sm" onClick={() => setExpandido((v) => !v)}>
           {expandido ? 'Ocultar preguntas' : 'Gestionar preguntas'}
         </button>
@@ -493,6 +415,147 @@ function CursoConBanco({ curso: c }: { curso: Curso }) {
         </>
       )}
     </div>
+  );
+}
+
+function CursoCamposForm({
+  idPrefix,
+  valorInicial,
+  textoBoton,
+  notaAlPie,
+  onSubmit,
+  onCancel,
+}: {
+  idPrefix: string;
+  valorInicial: NuevoCursoInput;
+  textoBoton: string;
+  notaAlPie?: string;
+  onSubmit: (input: NuevoCursoInput) => void;
+  onCancel?: () => void;
+}) {
+  const [form, setForm] = useState<NuevoCursoInput>(valorInicial);
+
+  const updateModulo = (idx: number, patch: Partial<Modulo>) => {
+    setForm((f) => ({ ...f, modulos: f.modulos.map((m, i) => (i === idx ? { ...m, ...patch } : m)) }));
+  };
+  const addModuloRow = () => setForm((f) => ({ ...f, modulos: [...f.modulos, { ...MODULO_INICIAL }] }));
+  const removeModuloRow = (idx: number) =>
+    setForm((f) => ({ ...f, modulos: f.modulos.filter((_, i) => i !== idx) }));
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const modulosValidos = form.modulos.filter((m) => m.t.trim());
+    if (!form.nombre.trim() || !form.duracion.trim() || !form.nivel.trim() || modulosValidos.length === 0) return;
+    onSubmit({ ...form, modulos: modulosValidos });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor={`${idPrefix}-nombre`}>Nombre del curso</label>
+          <input
+            id={`${idPrefix}-nombre`}
+            required
+            value={form.nombre}
+            onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+            placeholder="Ej: Excel Intermedio"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor={`${idPrefix}-escuela`}>Escuela (materia)</label>
+          <select
+            id={`${idPrefix}-escuela`}
+            value={form.escuela}
+            onChange={(e) => setForm((f) => ({ ...f, escuela: e.target.value }))}
+          >
+            {ESCUELAS.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor={`${idPrefix}-tipo`}>Tipo</label>
+          <select
+            id={`${idPrefix}-tipo`}
+            value={form.tipo}
+            onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as CursoTipo }))}
+          >
+            <option value="interna">Interna</option>
+            <option value="normativo">Normativo</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor={`${idPrefix}-duracion`}>Duración</label>
+          <input
+            id={`${idPrefix}-duracion`}
+            required
+            value={form.duracion}
+            onChange={(e) => setForm((f) => ({ ...f, duracion: e.target.value }))}
+            placeholder="Ej: 30 min"
+          />
+        </div>
+        <div className="field">
+          <label htmlFor={`${idPrefix}-nivel`}>Nivel</label>
+          <input
+            id={`${idPrefix}-nivel`}
+            required
+            value={form.nivel}
+            onChange={(e) => setForm((f) => ({ ...f, nivel: e.target.value }))}
+            placeholder="Ej: Fundamentos"
+          />
+        </div>
+      </div>
+
+      <div className="eyebrow" style={{ marginTop: 18 }}>
+        Módulos
+      </div>
+      {form.modulos.map((m, i) => (
+        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+          <input
+            style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+            value={m.t}
+            onChange={(e) => updateModulo(i, { t: e.target.value })}
+            placeholder={`Título del módulo ${i + 1}`}
+          />
+          <select
+            style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+            value={m.tipo}
+            onChange={(e) => updateModulo(i, { tipo: e.target.value as Modulo['tipo'] })}
+          >
+            <option value="video">Video</option>
+            <option value="pdf">PDF</option>
+            <option value="checklist">Checklist</option>
+          </select>
+          {form.modulos.length > 1 && (
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => removeModuloRow(i)}>
+              ×
+            </button>
+          )}
+        </div>
+      ))}
+      <button type="button" className="btn btn-outline btn-sm" onClick={addModuloRow} style={{ marginBottom: 14 }}>
+        + Agregar módulo
+      </button>
+
+      {notaAlPie && (
+        <div className="muted" style={{ fontSize: 12.5, margin: '4px 0 14px' }}>
+          {notaAlPie}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button className="btn btn-accent" type="submit">
+          {textoBoton}
+        </button>
+        {onCancel && (
+          <button type="button" className="btn btn-outline" onClick={onCancel}>
+            Cancelar
+          </button>
+        )}
+      </div>
+    </form>
   );
 }
 

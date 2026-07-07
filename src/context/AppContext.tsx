@@ -16,6 +16,7 @@ interface AppContextValue {
   addUser: (input: NuevoUsuarioInput) => Usuario;
   cursos: Curso[];
   addCurso: (input: NuevoCursoInput) => Curso;
+  editarCurso: (id: string, cambios: NuevoCursoInput) => void;
   addPreguntaACurso: (cursoId: string, pregunta: QuizPregunta) => void;
   device: Device;
   toggleDevice: () => void;
@@ -79,6 +80,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const nuevo: Curso = { id, ...input };
       setCursos((prev) => [...prev, nuevo]);
       return nuevo;
+    },
+    editarCurso: (id, cambios) => {
+      setCursos((prev) => prev.map((c) => (c.id === id ? { ...c, ...cambios } : c)));
     },
     addPreguntaACurso: (cursoId, pregunta) => {
       setCursos((prev) =>
