@@ -39,8 +39,19 @@ function nuevoId(): string {
   return crypto.randomUUID();
 }
 
+// Repara registros guardados en localStorage antes de que existiera algún campo
+// (ej. certificadosExternos), para que el resto de la app pueda confiar en el tipo Usuario.
+function normalizarUsuarios(users: Record<string, Usuario>): Record<string, Usuario> {
+  return Object.fromEntries(
+    Object.entries(users).map(([id, u]) => {
+      const crudo = u as Partial<Usuario>;
+      return [id, { certificadosExternos: [], ...crudo } as Usuario];
+    }),
+  );
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<Record<string, Usuario>>(() => loadState('users', USERS));
+  const [users, setUsers] = useState<Record<string, Usuario>>(() => normalizarUsuarios(loadState('users', USERS)));
   const [cursos, setCursos] = useState<Curso[]>(() => loadState('cursos', CURSOS));
   const [reglas, setReglas] = useState<Regla[]>(() => loadState('reglas', REGLAS));
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadState('currentUserId', null));
