@@ -11,11 +11,23 @@ const PREGUNTAS_MINIMAS = 5;
 type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos';
 
 export function Admin() {
+  const { resetDemo } = useApp();
   const [tab, setTab] = useState<Tab>('reglas');
+
+  const handleReset = () => {
+    if (window.confirm('¿Restablecer todos los datos de ejemplo? Se perderán los usuarios, cursos, preguntas y reglas creados durante esta sesión.')) {
+      resetDemo();
+    }
+  };
 
   return (
     <div data-fade>
-      <h1 className="h-title">Administración</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+        <h1 className="h-title">Administración</h1>
+        <button className="btn btn-outline btn-sm" onClick={handleReset}>
+          Restablecer datos de ejemplo
+        </button>
+      </div>
       <div className="tabs" style={{ marginTop: 14 }}>
         <div className={`tab${tab === 'reglas' ? ' active' : ''}`} onClick={() => setTab('reglas')}>
           Motor de reglas

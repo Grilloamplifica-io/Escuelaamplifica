@@ -1,7 +1,8 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
 import type { Curso, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
+import { clearState, loadState, saveState } from '../utils/storage';
 
 type Device = 'desktop' | 'mobile';
 
@@ -25,25 +26,31 @@ interface AppContextValue {
   toggleDevice: () => void;
   simMode: boolean;
   toggleSimMode: () => void;
+  resetDemo: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-let nextUserSeq = 1;
-let nextCursoSeq = 1;
-let nextReglaSeq = 1;
+function nuevoId(): string {
+  return crypto.randomUUID();
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<Record<string, Usuario>>(USERS);
-  const [cursos, setCursos] = useState<Curso[]>(CURSOS);
-  const [reglas, setReglas] = useState<Regla[]>(REGLAS);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [users, setUsers] = useState<Record<string, Usuario>>(() => loadState('users', USERS));
+  const [cursos, setCursos] = useState<Curso[]>(() => loadState('cursos', CURSOS));
+  const [reglas, setReglas] = useState<Regla[]>(() => loadState('reglas', REGLAS));
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadState('currentUserId', null));
   const [device, setDevice] = useState<Device>('desktop');
   const [simMode, setSimMode] = useState(false);
 
+  useEffect(() => saveState('users', users), [users]);
+  useEffect(() => saveState('cursos', cursos), [cursos]);
+  useEffect(() => saveState('reglas', reglas), [reglas]);
+  useEffect(() => saveState('currentUserId', currentUserId), [currentUserId]);
+
   const value = useMemo<AppContextValue>(() => ({
     currentUserId,
-    me: currentUserId ? users[currentUserId] : null,
+    me: currentUserId ? users[currentUserId] ?? null : null,
     isAuthenticated: currentUserId !== null,
     login: (rut, clave) => {
       const encontrado = Object.values(users).find((u) => mismoRut(u.rut, rut));
@@ -56,7 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCurrentUserId,
     users,
     addUser: (input) => {
-      const id = `nuevo-${nextUserSeq++}`;
+      const id = nuevoId();
       // Motor de reglas: onboarding obligatorio + cursos de su Escuela base + cursos de las
       // Escuelas que el motor de reglas asigna según su rol, todos en "pendiente".
       const escuelasAAsignar = new Set([input.escuela]);
@@ -92,13 +99,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     reglas,
     addRegla: (input) => {
-      const nueva: Regla = { id: `nueva-regla-${nextReglaSeq++}`, ...input };
+      const nueva: Regla = { id: nuevoId(), ...input };
       setReglas((prev) => [...prev, nueva]);
       return nueva;
     },
     cursos,
     addCurso: (input) => {
-      const id = `nuevo-curso-${nextCursoSeq++}`;
+      const id = nuevoId();
       const nuevo: Curso = { id, ...input };
       setCursos((prev) => [...prev, nuevo]);
       return nuevo;
@@ -115,6 +122,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleDevice: () => setDevice((d) => (d === 'mobile' ? 'desktop' : 'mobile')),
     simMode,
     toggleSimMode: () => setSimMode((s) => !s),
+    resetDemo: () => {
+      clearState(['users', 'cursos', 'reglas', 'currentUserId']);
+      setUsers(USERS);
+      setCursos(CURSOS);
+      setReglas(REGLAS);
+      setCurrentUserId(null);
+    },
   }), [currentUserId, users, cursos, reglas, device, simMode]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
