@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
-import type { Curso, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
+import type { Certificado, Curso, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
+import { generarCodigoCertificado, formatearFechaCorta } from '../utils/certificado';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 import { clearState, loadState, saveState } from '../utils/storage';
 
@@ -16,6 +17,7 @@ interface AppContextValue {
   users: Record<string, Usuario>;
   addUser: (input: NuevoUsuarioInput) => Usuario;
   asignarCursoAUsuario: (userId: string, cursoId: string) => void;
+  aprobarCurso: (userId: string, cursoId: string) => Certificado;
   reglas: Regla[];
   addRegla: (input: NuevaReglaInput) => Regla;
   cursos: Curso[];
@@ -96,6 +98,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!u || u.asign[cursoId]) return prev;
         return { ...prev, [userId]: { ...u, asign: { ...u.asign, [cursoId]: 'pendiente' } } };
       });
+    },
+    aprobarCurso: (userId, cursoId) => {
+      const existente = users[userId]?.cert.find((c) => c.cursoId === cursoId);
+      const certificado: Certificado = existente ?? {
+        cursoId,
+        codigo: generarCodigoCertificado(),
+        fecha: formatearFechaCorta(new Date()),
+      };
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u) return prev;
+        const yaCertificado = u.cert.some((c) => c.cursoId === cursoId);
+        return {
+          ...prev,
+          [userId]: {
+            ...u,
+            asign: { ...u.asign, [cursoId]: 'aprobado' },
+            cert: yaCertificado ? u.cert : [...u.cert, certificado],
+          },
+        };
+      });
+      return certificado;
     },
     reglas,
     addRegla: (input) => {

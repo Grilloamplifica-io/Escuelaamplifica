@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useCurso } from '../context/AppContext';
+import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
 import { iconFor } from '../components/ui';
 
 export function Reproductor() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const me = useCurrentUser();
+  const { aprobarCurso } = useApp();
   const c = useCurso(id);
   const [moduloIdx, setModuloIdx] = useState(0);
   const [checklistDone, setChecklistDone] = useState<Record<number, boolean>>({});
@@ -67,7 +69,13 @@ export function Reproductor() {
                   Ir a la evaluación →
                 </button>
               ) : (
-                <button className="btn btn-accent" onClick={() => navigate(`/certificado/${c.id}`)}>
+                <button
+                  className="btn btn-accent"
+                  onClick={() => {
+                    aprobarCurso(me.id, c.id);
+                    navigate(`/certificado/${c.id}`);
+                  }}
+                >
                   Marcar completado →
                 </button>
               )

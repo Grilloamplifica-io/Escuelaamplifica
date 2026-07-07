@@ -7,7 +7,8 @@ export function Certificado() {
   const u = useCurrentUser();
   const navigate = useNavigate();
   const c = useCurso(id);
-  const codigo = 'AMP-' + id.toUpperCase() + '-DEMO';
+  const cert = u.cert.find((cert) => cert.cursoId === id);
+  const codigo = cert?.codigo ?? 'AMP-' + id.toUpperCase() + '-DEMO';
 
   let qrCells = [];
   for (let i = 0; i < 49; i++) {
@@ -45,6 +46,11 @@ export function Certificado() {
               <div className="mono" style={{ fontSize: 14, marginBottom: 8 }}>
                 {codigo}
               </div>
+              {cert && (
+                <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+                  Aprobado el {cert.fecha}
+                </div>
+              )}
               <div className="muted" style={{ fontSize: 11, textTransform: 'uppercase' }}>
                 Verificar en
               </div>
