@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { AmplificaLogo } from './Logo';
+import logoAmplifica from '../assets/brand/logo.png';
 
 function titleForPath(pathname: string): string {
   if (pathname === '/') return 'Home';
@@ -22,10 +22,10 @@ export function Topbar() {
 
   return (
     <div id="topbar">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <AmplificaLogo size={26} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <img src={logoAmplifica} alt="Amplifica" style={{ height: 20, width: 'auto' }} />
         <div className="crumb">
-          Academia Amplifica / <b>{titleForPath(location.pathname)}</b>
+          Academia Corporativa / <b>{titleForPath(location.pathname)}</b>
         </div>
       </div>
       <div className="topbar-right">
