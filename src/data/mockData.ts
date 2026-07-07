@@ -163,6 +163,7 @@ export const USERS: Record<string, Usuario> = {
     asign: { c1: 'aprobado', c5: 'desarrollo', c2: 'pendiente', c6: 'aprobado' },
     progreso: { c5: 60 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-9K2L-0091', fecha: '12 may 2026' }, { cursoId: 'c6', codigo: 'AMP-7T4Q-0142', fecha: '02 jun 2026' }],
+    certificadosExternos: [],
   },
   u2: {
     id: 'u2', nombre: 'Luis Paredes', cargo: 'Operario de Bodega', rol: 'colaborador', contexto: 'bodega', escuela: 'ope', color: '#57708C',
@@ -170,6 +171,9 @@ export const USERS: Record<string, Usuario> = {
     asign: { c1: 'aprobado', c3: 'pendiente', c4: 'desarrollo', c2: 'aprobado' },
     progreso: { c4: 40 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-3B7X-0055', fecha: '03 may 2026' }, { cursoId: 'c2', codigo: 'AMP-1M9D-0076', fecha: '20 may 2026' }],
+    certificadosExternos: [
+      { id: 'ext-1', nombre: 'Manejo Manual de Carga', institucion: 'Mutual de Seguridad CChC', fecha: '15 mar 2026', codigo: 'MUT-2026-4471' },
+    ],
   },
   u3: {
     id: 'u3', nombre: 'Daniela Vidal', cargo: 'Jefa de Sucursal', rol: 'lider', contexto: 'oficina', escuela: 'ope', color: '#C99A2E',
@@ -177,6 +181,7 @@ export const USERS: Record<string, Usuario> = {
     asign: { c1: 'aprobado', c2: 'aprobado', c7: 'desarrollo' },
     progreso: { c7: 20 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-5H1C-0032', fecha: '28 abr 2026' }],
+    certificadosExternos: [],
   },
   u4: {
     id: 'u4', nombre: 'Rosangel Rincón', cargo: 'People Partner', rol: 'people', contexto: 'oficina', escuela: 'per', color: '#7C5CBF',
@@ -184,6 +189,7 @@ export const USERS: Record<string, Usuario> = {
     asign: { c1: 'aprobado', c2: 'aprobado' },
     progreso: {},
     cert: [],
+    certificadosExternos: [],
   },
 };
 

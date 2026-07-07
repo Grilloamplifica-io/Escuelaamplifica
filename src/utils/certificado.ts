@@ -4,6 +4,11 @@ export function formatearFechaCorta(fecha: Date): string {
   return `${fecha.getDate()} ${MESES[fecha.getMonth()]} ${fecha.getFullYear()}`;
 }
 
+export function formatearFechaISO(iso: string): string {
+  const [anio, mes, dia] = iso.split('-').map(Number);
+  return `${dia} ${MESES[mes - 1]} ${anio}`;
+}
+
 export function generarCodigoCertificado(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let sufijo = '';

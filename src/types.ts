@@ -44,6 +44,25 @@ export interface Certificado {
   fecha: string;
 }
 
+export interface CertificadoExterno {
+  id: string;
+  nombre: string;
+  institucion: string;
+  fecha: string;
+  codigo?: string;
+  archivoNombre?: string;
+  archivoDataUrl?: string;
+}
+
+export interface NuevoCertificadoExternoInput {
+  nombre: string;
+  institucion: string;
+  fecha: string;
+  codigo?: string;
+  archivoNombre?: string;
+  archivoDataUrl?: string;
+}
+
 export interface Usuario {
   id: string;
   nombre: string;
@@ -56,6 +75,7 @@ export interface Usuario {
   asign: Record<string, EstadoAsignacion>;
   progreso: Record<string, number>;
   cert: Certificado[];
+  certificadosExternos: CertificadoExterno[];
 }
 
 export interface NuevoUsuarioInput {

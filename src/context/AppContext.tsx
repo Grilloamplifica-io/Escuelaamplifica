@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
-import type { Certificado, Curso, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
+import type { Certificado, CertificadoExterno, Curso, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
 import { generarCodigoCertificado, formatearFechaCorta } from '../utils/certificado';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 import { clearState, loadState, saveState } from '../utils/storage';
@@ -18,6 +18,8 @@ interface AppContextValue {
   addUser: (input: NuevoUsuarioInput) => Usuario;
   asignarCursoAUsuario: (userId: string, cursoId: string) => void;
   aprobarCurso: (userId: string, cursoId: string) => Certificado;
+  addCertificadoExterno: (userId: string, input: NuevoCertificadoExternoInput) => CertificadoExterno;
+  eliminarCertificadoExterno: (userId: string, certId: string) => void;
   reglas: Regla[];
   addRegla: (input: NuevaReglaInput) => Regla;
   cursos: Curso[];
@@ -88,6 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         asign,
         progreso: {},
         cert: [],
+        certificadosExternos: [],
       };
       setUsers((prev) => ({ ...prev, [id]: nuevo }));
       return nuevo;
@@ -120,6 +123,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
       return certificado;
+    },
+    addCertificadoExterno: (userId, input) => {
+      const nuevo: CertificadoExterno = { id: nuevoId(), ...input };
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u) return prev;
+        return { ...prev, [userId]: { ...u, certificadosExternos: [...u.certificadosExternos, nuevo] } };
+      });
+      return nuevo;
+    },
+    eliminarCertificadoExterno: (userId, certId) => {
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u) return prev;
+        return { ...prev, [userId]: { ...u, certificadosExternos: u.certificadosExternos.filter((c) => c.id !== certId) } };
+      });
     },
     reglas,
     addRegla: (input) => {
