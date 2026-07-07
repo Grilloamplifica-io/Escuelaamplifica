@@ -194,8 +194,6 @@ export const EQUIPO_DANIELA: MiembroEquipo[] = [
 ];
 
 export const REGLAS: Regla[] = [
-  { cond: 'área = Operaciones', accion: 'asigna Escuela de Operaciones (obligatorios)' },
-  { cond: 'cargo ≥ Supervisor', accion: 'asigna Escuela de Liderazgo (nivel según cargo)' },
-  { cond: 'área = Comercial', accion: 'asigna Ventas, Producto, Clientes y Customer Success' },
-  { cond: 'antigüedad < 30 días', accion: 'asigna Programa de Onboarding (prioridad máxima)' },
+  { id: 'r1', rol: 'lider', escuela: 'lid' },
+  { id: 'r2', rol: 'people', escuela: 'per' },
 ];

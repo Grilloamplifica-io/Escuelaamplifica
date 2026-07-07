@@ -84,6 +84,12 @@ export interface MiembroEquipo {
 }
 
 export interface Regla {
-  cond: string;
-  accion: string;
+  id: string;
+  rol: Rol;
+  escuela: string;
+}
+
+export interface NuevaReglaInput {
+  rol: Rol;
+  escuela: string;
 }

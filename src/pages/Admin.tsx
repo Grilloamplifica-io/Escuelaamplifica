@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ESCUELAS, REGLAS, escuela } from '../data/mockData';
-import { BadgeTipo, Crest } from '../components/ui';
+import { ESCUELAS, escuela } from '../data/mockData';
+import { BadgeEstado, BadgeTipo, Crest } from '../components/ui';
 import { useApp } from '../context/AppContext';
 import { claveInicialDeRut } from '../utils/rut';
-import type { Curso, CursoTipo, Modulo, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
+import type { Curso, CursoTipo, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
 
@@ -38,14 +38,26 @@ export function Admin() {
   );
 }
 
+const REGLA_FORM_INICIAL: NuevaReglaInput = { rol: 'lider', escuela: ESCUELAS[0].id };
+
 function AdminReglas() {
+  const { reglas, addRegla, users } = useApp();
   const [simMode, setSimMode] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<NuevaReglaInput>(REGLA_FORM_INICIAL);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    addRegla(form);
+    setForm(REGLA_FORM_INICIAL);
+    setShowForm(false);
+  };
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="eyebrow" style={{ margin: 0 }}>
-          Reglas activas de enrolamiento automático
+          Reglas de enrolamiento automático por rol
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className="muted" style={{ fontSize: 12.5 }}>
@@ -56,24 +68,68 @@ function AdminReglas() {
           </div>
         </div>
       </div>
+      <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
+        Además de estas reglas, todo colaborador nuevo recibe automáticamente el Onboarding Amplifica y los cursos de
+        su Escuela base.
+      </div>
       <div className="divider" />
-      {REGLAS.map((r, i) => (
-        <div className="rule-card" key={i}>
-          <span className="rule-pill">SI</span>
-          <span style={{ fontSize: 13.5 }}>{r.cond}</span>
-          <span className="arrow">→</span>
-          <span className="rule-pill" style={{ background: 'var(--azul)' }}>
-            ENTONCES
-          </span>
-          <span style={{ fontSize: 13.5 }}>{r.accion}</span>
-        </div>
-      ))}
-      <button className="btn btn-primary btn-sm">+ Nueva regla</button>
-      {simMode && (
-        <div className="card" style={{ marginTop: 14, background: 'var(--success-bg)', border: 'none' }}>
-          <b style={{ color: 'var(--success)' }}>Simulación:</b> esta regla afectaría a <b>18 colaboradores</b> de
-          Operaciones que aún no tienen la Escuela asignada. Ningún cambio se aplicará hasta activar la regla.
-        </div>
+      {reglas.map((r) => {
+        const afectados = users ? Object.values(users).filter((u) => u.rol === r.rol).length : 0;
+        return (
+          <div key={r.id}>
+            <div className="rule-card">
+              <span className="rule-pill">SI</span>
+              <span style={{ fontSize: 13.5 }}>rol = {ROL_LABEL[r.rol]}</span>
+              <span className="arrow">→</span>
+              <span className="rule-pill" style={{ background: 'var(--azul)' }}>
+                ENTONCES
+              </span>
+              <span style={{ fontSize: 13.5 }}>asigna cursos de Escuela {escuela(r.escuela).nombre}</span>
+            </div>
+            {simMode && (
+              <div className="muted" style={{ fontSize: 12, margin: '-4px 0 10px 15px' }}>
+                Afecta a {afectados} colaborador{afectados === 1 ? '' : 'es'} con rol {ROL_LABEL[r.rol]}.
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {showForm ? (
+        <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="regla-rol">SI rol =</label>
+              <select id="regla-rol" value={form.rol} onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value as Rol }))}>
+                <option value="colaborador">Colaborador</option>
+                <option value="lider">Líder</option>
+                <option value="people">People</option>
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="regla-escuela">ENTONCES asigna Escuela</label>
+              <select id="regla-escuela" value={form.escuela} onChange={(e) => setForm((f) => ({ ...f, escuela: e.target.value }))}>
+                {ESCUELAS.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            <button className="btn btn-accent" type="submit">
+              Agregar regla
+            </button>
+            <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+          + Nueva regla
+        </button>
       )}
     </div>
   );
@@ -128,8 +184,7 @@ const USUARIO_FORM_INICIAL: NuevoUsuarioInput = {
 };
 
 function AdminUsuarios() {
-  const { users, addUser, setCurrentUserId } = useApp();
-  const navigate = useNavigate();
+  const { users, addUser } = useApp();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NuevoUsuarioInput>(USUARIO_FORM_INICIAL);
   const [ultimoCreado, setUltimoCreado] = useState<Usuario | null>(null);
@@ -248,49 +303,97 @@ function AdminUsuarios() {
         </div>
       )}
 
-      <div className="card">
-        <table>
-          <tbody>
-            <tr>
-              <th>Colaborador</th>
-              <th>RUT</th>
-              <th>Cargo</th>
-              <th>Rol</th>
-              <th>Escuela base</th>
-              <th>Cursos asignados</th>
-              <th></th>
-            </tr>
-            {Object.values(users).map((u) => (
-              <tr key={u.id}>
-                <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div className="avatar" style={{ background: u.color, width: 28, height: 28, fontSize: 11, borderRadius: 8 }}>
-                    {u.nombre.split(' ').map((w) => w[0]).slice(0, 2).join('')}
-                  </div>
-                  {u.nombre}
-                </td>
-                <td className="mono muted" style={{ fontSize: 12.5 }}>
-                  {u.rut}
-                </td>
-                <td>{u.cargo}</td>
-                <td>{ROL_LABEL[u.rol]}</td>
-                <td>{escuela(u.escuela).nombre}</td>
-                <td>{Object.keys(u.asign).length}</td>
-                <td>
-                  <button
-                    className="btn btn-outline btn-sm"
-                    onClick={() => {
-                      setCurrentUserId(u.id);
-                      navigate('/');
-                    }}
-                  >
-                    Ver como
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {Object.values(users).map((u) => (
+        <UsuarioConCursos usuario={u} key={u.id} />
+      ))}
+    </div>
+  );
+}
+
+function UsuarioConCursos({ usuario: u }: { usuario: Usuario }) {
+  const { setCurrentUserId } = useApp();
+  const navigate = useNavigate();
+  const [gestionando, setGestionando] = useState(false);
+
+  return (
+    <div className="card" style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <div className="avatar" style={{ background: u.color, width: 32, height: 32, fontSize: 12, borderRadius: 9 }}>
+          {u.nombre.split(' ').map((w) => w[0]).slice(0, 2).join('')}
+        </div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{u.nombre}</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            {u.cargo} · {ROL_LABEL[u.rol]} · Escuela base: {escuela(u.escuela).nombre}
+          </div>
+        </div>
+        <span className="mono muted" style={{ fontSize: 12 }}>
+          {u.rut}
+        </span>
+        <span className="badge badge-interna">{Object.keys(u.asign).length} cursos</span>
+        <button className="btn btn-outline btn-sm" onClick={() => setGestionando((v) => !v)}>
+          {gestionando ? 'Ocultar cursos' : 'Gestionar cursos'}
+        </button>
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={() => {
+            setCurrentUserId(u.id);
+            navigate('/');
+          }}
+        >
+          Ver como
+        </button>
       </div>
+
+      {gestionando && (
+        <>
+          <div className="divider" />
+          <CursosDeUsuario usuario={u} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function CursosDeUsuario({ usuario: u }: { usuario: Usuario }) {
+  const { cursos, asignarCursoAUsuario } = useApp();
+  const asignados = cursos.filter((c) => u.asign[c.id]);
+  const disponibles = cursos.filter((c) => !u.asign[c.id]);
+
+  return (
+    <div>
+      <div className="eyebrow">Cursos asignados</div>
+      {asignados.length ? (
+        asignados.map((c) => (
+          <div className="venc-row" key={c.id}>
+            <span>{c.nombre}</span>
+            <BadgeEstado estado={u.asign[c.id]} />
+          </div>
+        ))
+      ) : (
+        <div className="muted" style={{ fontSize: 13 }}>
+          Aún no tiene cursos asignados.
+        </div>
+      )}
+
+      <div className="divider" />
+      <div className="eyebrow">Cursos disponibles para asignar</div>
+      {disponibles.length ? (
+        disponibles.map((c) => (
+          <div className="venc-row" key={c.id}>
+            <span>
+              {c.nombre} <span className="muted">· {escuela(c.escuela).nombre}</span>
+            </span>
+            <button className="btn btn-accent btn-sm" onClick={() => asignarCursoAUsuario(u.id, c.id)}>
+              + Asignar
+            </button>
+          </div>
+        ))
+      ) : (
+        <div className="muted" style={{ fontSize: 13 }}>
+          Ya tiene todos los cursos del catálogo asignados.
+        </div>
+      )}
     </div>
   );
 }

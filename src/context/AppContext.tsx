@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { CURSOS, USERS } from '../data/mockData';
-import type { Curso, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Usuario } from '../types';
+import { CURSOS, REGLAS, USERS } from '../data/mockData';
+import type { Curso, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 
 type Device = 'desktop' | 'mobile';
@@ -14,6 +14,9 @@ interface AppContextValue {
   setCurrentUserId: (id: string) => void;
   users: Record<string, Usuario>;
   addUser: (input: NuevoUsuarioInput) => Usuario;
+  asignarCursoAUsuario: (userId: string, cursoId: string) => void;
+  reglas: Regla[];
+  addRegla: (input: NuevaReglaInput) => Regla;
   cursos: Curso[];
   addCurso: (input: NuevoCursoInput) => Curso;
   editarCurso: (id: string, cambios: NuevoCursoInput) => void;
@@ -28,10 +31,12 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 let nextUserSeq = 1;
 let nextCursoSeq = 1;
+let nextReglaSeq = 1;
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<Record<string, Usuario>>(USERS);
   const [cursos, setCursos] = useState<Curso[]>(CURSOS);
+  const [reglas, setReglas] = useState<Regla[]>(REGLAS);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [device, setDevice] = useState<Device>('desktop');
   const [simMode, setSimMode] = useState(false);
@@ -52,12 +57,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     users,
     addUser: (input) => {
       const id = `nuevo-${nextUserSeq++}`;
-      // Simula el motor de reglas: onboarding obligatorio + cursos de su Escuela, ambos "pendiente".
-      const cursosEscuela = cursos.filter((c) => c.escuela === input.escuela).map((c) => c.id);
+      // Motor de reglas: onboarding obligatorio + cursos de su Escuela base + cursos de las
+      // Escuelas que el motor de reglas asigna según su rol, todos en "pendiente".
+      const escuelasAAsignar = new Set([input.escuela]);
+      reglas.filter((r) => r.rol === input.rol).forEach((r) => escuelasAAsignar.add(r.escuela));
       const asign: Usuario['asign'] = { c1: 'pendiente' };
-      cursosEscuela.forEach((cid) => {
-        if (cid !== 'c1') asign[cid] = 'pendiente';
-      });
+      cursos
+        .filter((c) => escuelasAAsignar.has(c.escuela))
+        .forEach((c) => {
+          if (c.id !== 'c1') asign[c.id] = 'pendiente';
+        });
       const nuevo: Usuario = {
         id,
         nombre: input.nombre,
@@ -73,6 +82,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
       setUsers((prev) => ({ ...prev, [id]: nuevo }));
       return nuevo;
+    },
+    asignarCursoAUsuario: (userId, cursoId) => {
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u || u.asign[cursoId]) return prev;
+        return { ...prev, [userId]: { ...u, asign: { ...u.asign, [cursoId]: 'pendiente' } } };
+      });
+    },
+    reglas,
+    addRegla: (input) => {
+      const nueva: Regla = { id: `nueva-regla-${nextReglaSeq++}`, ...input };
+      setReglas((prev) => [...prev, nueva]);
+      return nueva;
     },
     cursos,
     addCurso: (input) => {
@@ -93,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toggleDevice: () => setDevice((d) => (d === 'mobile' ? 'desktop' : 'mobile')),
     simMode,
     toggleSimMode: () => setSimMode((s) => !s),
-  }), [currentUserId, users, cursos, device, simMode]);
+  }), [currentUserId, users, cursos, reglas, device, simMode]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
