@@ -9,7 +9,7 @@ import type { Curso, CursoTipo, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoU
 
 const PREGUNTAS_MINIMAS = 5;
 
-type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos';
+type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos' | 'ranking';
 
 export function Admin() {
   const { resetDemo } = useApp();
@@ -42,11 +42,90 @@ export function Admin() {
         <div className={`tab${tab === 'cursos' ? ' active' : ''}`} onClick={() => setTab('cursos')}>
           Cursos
         </div>
+        <div className={`tab${tab === 'ranking' ? ' active' : ''}`} onClick={() => setTab('ranking')}>
+          Ranking
+        </div>
       </div>
       {tab === 'reglas' && <AdminReglas />}
       {tab === 'escuelas' && <AdminEscuelas />}
       {tab === 'usuarios' && <AdminUsuarios />}
       {tab === 'cursos' && <AdminCursos />}
+      {tab === 'ranking' && <AdminRanking />}
+    </div>
+  );
+}
+
+interface FilaRanking {
+  usuario: Usuario;
+  asignados: number;
+  aprobados: number;
+  pct: number;
+}
+
+function AdminRanking() {
+  const { cursos, users } = useApp();
+  const usuarios = Object.values(users);
+
+  const rankingsPorEscuela = ESCUELAS.map((e) => {
+    const cursosEscuela = cursos.filter((c) => c.escuela === e.id).map((c) => c.id);
+    const filas: FilaRanking[] = usuarios
+      .map((usuario) => {
+        const asignados = cursosEscuela.filter((cid) => usuario.asign[cid]);
+        const aprobados = asignados.filter((cid) => usuario.asign[cid] === 'aprobado');
+        return { usuario, asignados: asignados.length, aprobados: aprobados.length, pct: 0 };
+      })
+      .filter((f) => f.asignados > 0)
+      .map((f) => ({ ...f, pct: Math.round((f.aprobados / f.asignados) * 100) }))
+      .sort((a, b) => b.pct - a.pct || b.aprobados - a.aprobados || a.usuario.nombre.localeCompare(b.usuario.nombre));
+    return { escuela: e, filas };
+  }).filter((r) => r.filas.length > 0);
+
+  return (
+    <div>
+      <div className="muted" style={{ fontSize: 12.5, margin: '4px 0 16px' }}>
+        Cumplimiento por Escuela: % de cursos aprobados entre los cursos de esa Escuela que cada colaborador tiene
+        asignados. Solo aparecen colaboradores con al menos un curso asignado de la Escuela.
+      </div>
+      {rankingsPorEscuela.length === 0 && (
+        <div className="empty">Aún no hay cursos asignados para calcular un ranking.</div>
+      )}
+      {rankingsPorEscuela.map(({ escuela: e, filas }) => (
+        <div className="card" key={e.id} style={{ marginBottom: 16 }}>
+          <div className="escuela-row-head" style={{ marginBottom: 12 }}>
+            <Crest escuela={e} sm />
+            <div className="h4 display" style={{ fontSize: 15 }}>
+              {e.nombre}
+            </div>
+          </div>
+          {filas.map((f, i) => (
+            <div className="venc-row" key={f.usuario.id}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ width: 22, textAlign: 'center' }}>
+                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="muted">{i + 1}</span>}
+                </span>
+                <span
+                  className="avatar"
+                  style={{ background: f.usuario.color, width: 26, height: 26, fontSize: 10, borderRadius: 8 }}
+                >
+                  {f.usuario.nombre.split(' ').map((w) => w[0]).slice(0, 2).join('')}
+                </span>
+                <span>
+                  {f.usuario.nombre} <span className="muted" style={{ fontSize: 12 }}>· {f.usuario.cargo}</span>
+                </span>
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="muted" style={{ fontSize: 12 }}>
+                  {f.aprobados}/{f.asignados}
+                </span>
+                <div className="progress" style={{ width: 100 }}>
+                  <span style={{ width: `${f.pct}%`, background: f.pct >= 80 ? 'var(--success)' : 'var(--azul)' }} />
+                </div>
+                <b style={{ fontSize: 13, minWidth: 34, textAlign: 'right' }}>{f.pct}%</b>
+              </span>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
