@@ -169,7 +169,8 @@ function CertificadosExternos({ usuario: u }: { usuario: Usuario }) {
         </button>
       </div>
       <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
-        Respalda aquí certificaciones tomadas fuera de Amplifica (mutualidad, ACHS, IST, etc.).
+        Respalda aquí cualquier certificación tomada fuera de Amplifica: cursos de plataformas externas
+        (Anthropic Academy, Coursera, Cowork, etc.) o capacitaciones de mutualidad (ACHS, IST, Mutual de Seguridad).
       </div>
 
       {showForm && (
@@ -183,7 +184,7 @@ function CertificadosExternos({ usuario: u }: { usuario: Usuario }) {
                 required
                 value={form.nombre}
                 onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                placeholder="Ej: Manejo Manual de Carga"
+                placeholder="Ej: Claude 101"
               />
             </div>
             <div className="field">
@@ -193,7 +194,7 @@ function CertificadosExternos({ usuario: u }: { usuario: Usuario }) {
                 required
                 value={form.institucion}
                 onChange={(e) => setForm((f) => ({ ...f, institucion: e.target.value }))}
-                placeholder="Ej: Mutual de Seguridad CChC"
+                placeholder="Ej: Anthropic Academy, Cowork, Mutual de Seguridad…"
               />
             </div>
             <div className="field">
