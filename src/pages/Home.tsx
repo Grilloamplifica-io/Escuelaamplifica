@@ -23,7 +23,7 @@ export function Home() {
   return (
     <div data-fade>
       <div className="eyebrow">{u.contexto === 'bodega' ? 'Vista bodega · mobile-first' : 'Hola de nuevo'}</div>
-      <h1 className="h-title">Bienvenido/a, {u.nombre.split(' ')[0]}</h1>
+      <h1 className="h-title">Bienvenido/a, {u.nombre}</h1>
       <div className="divider" />
 
       <div className="grid cols-4" style={{ marginBottom: 20 }}>
