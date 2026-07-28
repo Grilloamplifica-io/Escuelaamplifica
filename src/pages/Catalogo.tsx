@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { escuela } from '../data/mockData';
-import { useApp } from '../context/AppContext';
+import { useApp, useCurrentUser } from '../context/AppContext';
 import { Crest, CourseCard } from '../components/ui';
 import type { Curso, CursoTipo } from '../types';
 
@@ -12,9 +12,12 @@ function normalizarTexto(valor: string): string {
 type Filtro = 'todos' | CursoTipo;
 
 export function Catalogo() {
-  const { cursos: todosCursos } = useApp();
+  const { cursos } = useApp();
+  const me = useCurrentUser();
   const [busqueda, setBusqueda] = useState('');
   const [filtro, setFiltro] = useState<Filtro>('todos');
+
+  const todosCursos = useMemo(() => cursos.filter((c) => !!me.asign[c.id]), [cursos, me.asign]);
 
   const cursosFiltrados = useMemo(() => {
     const termino = normalizarTexto(busqueda.trim());
@@ -53,7 +56,11 @@ export function Catalogo() {
         </div>
       </div>
       {Object.keys(grupos).length === 0 && (
-        <div className="empty">No hay cursos que calcen con la búsqueda o filtro elegido.</div>
+        <div className="empty">
+          {todosCursos.length === 0
+            ? 'Todavía no tienes cursos habilitados. Cuando te asignen uno, aparecerá aquí.'
+            : 'No hay cursos que calcen con la búsqueda o filtro elegido.'}
+        </div>
       )}
       {Object.entries(grupos).map(([eid, cursos]) => {
         const e = escuela(eid);
