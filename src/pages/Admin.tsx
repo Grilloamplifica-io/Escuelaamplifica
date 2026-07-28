@@ -1120,26 +1120,42 @@ function CursoCamposForm({
         Módulos
       </div>
       {form.modulos.map((m, i) => (
-        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-          <input
-            style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
-            value={m.t}
-            onChange={(e) => updateModulo(i, { t: e.target.value })}
-            placeholder={`Título del módulo ${i + 1}`}
-          />
-          <select
-            style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
-            value={m.tipo}
-            onChange={(e) => updateModulo(i, { tipo: e.target.value as Modulo['tipo'] })}
-          >
-            <option value="video">Video</option>
-            <option value="pdf">PDF</option>
-            <option value="checklist">Checklist</option>
-          </select>
-          {form.modulos.length > 1 && (
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => removeModuloRow(i)}>
-              ×
-            </button>
+        <div key={i} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <input
+              style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+              value={m.t}
+              onChange={(e) => updateModulo(i, { t: e.target.value })}
+              placeholder={`Título del módulo ${i + 1}`}
+            />
+            <select
+              style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+              value={m.tipo}
+              onChange={(e) => updateModulo(i, { tipo: e.target.value as Modulo['tipo'] })}
+            >
+              <option value="video">Video</option>
+              <option value="pdf">PDF</option>
+              <option value="checklist">Checklist</option>
+            </select>
+            {form.modulos.length > 1 && (
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => removeModuloRow(i)}>
+                ×
+              </button>
+            )}
+          </div>
+          {(m.tipo === 'video' || m.tipo === 'pdf') && (
+            <div style={{ marginTop: 8 }}>
+              <input
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
+                value={m.archivoUrl ?? ''}
+                onChange={(e) => updateModulo(i, { archivoUrl: e.target.value })}
+                placeholder={
+                  m.tipo === 'video'
+                    ? 'Link del video (YouTube o Google Drive)'
+                    : 'Link del documento (Google Drive o URL directa al PDF)'
+                }
+              />
+            </div>
           )}
         </div>
       ))}

@@ -4,6 +4,8 @@ export interface Modulo {
   t: string;
   tipo: ModuloTipo;
   items?: string[];
+  archivoUrl?: string;
+  archivoNombre?: string;
 }
 
 export interface QuizPregunta {

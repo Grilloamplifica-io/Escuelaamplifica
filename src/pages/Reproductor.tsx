@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
 import { iconFor } from '../components/ui';
+import { esArchivoDeVideoDirecto, urlEmbebida } from '../utils/embedUrl';
 
 export function Reproductor() {
   const { id = '' } = useParams();
@@ -49,6 +50,27 @@ export function Reproductor() {
                   <span>{it}</span>
                 </label>
               ))}
+            </div>
+          ) : m.tipo === 'video' && m.archivoUrl && esArchivoDeVideoDirecto(m.archivoUrl) ? (
+            <video src={m.archivoUrl} controls style={{ width: '100%', borderRadius: 12, background: '#000' }} />
+          ) : m.tipo === 'video' && m.archivoUrl ? (
+            <iframe
+              src={urlEmbebida(m.archivoUrl)}
+              title={m.t}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              style={{ width: '100%', height: 340, border: 'none', borderRadius: 12 }}
+            />
+          ) : m.tipo === 'pdf' && m.archivoUrl ? (
+            <div>
+              <iframe
+                src={urlEmbebida(m.archivoUrl)}
+                title={m.t}
+                style={{ width: '100%', height: 460, border: '1px solid var(--border)', borderRadius: 12 }}
+              />
+              <a href={m.archivoUrl} target="_blank" rel="noreferrer" className="btn btn-outline btn-sm" style={{ marginTop: 10 }}>
+                Abrir en pestaña nueva
+              </a>
             </div>
           ) : (
             <div className="player-stage">
