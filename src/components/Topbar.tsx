@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useApp } from '../context/AppContext';
+import { useApp, useCurrentUser } from '../context/AppContext';
 import logoAmplifica from '../assets/brand/logo.png';
+import { RUT_ADMINISTRADOR } from '../config/admin';
+import { mismoRut } from '../utils/rut';
 
 function titleForPath(pathname: string): string {
   if (pathname === '/') return 'Home';
@@ -17,6 +19,8 @@ function titleForPath(pathname: string): string {
 
 export function Topbar() {
   const { currentUserId, setCurrentUserId, users, device, toggleDevice, logout } = useApp();
+  const me = useCurrentUser();
+  const esAdministrador = mismoRut(me.rut, RUT_ADMINISTRADOR);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -29,20 +33,26 @@ export function Topbar() {
         </div>
       </div>
       <div className="topbar-right">
-        <select
-          className="picker"
-          value={currentUserId ?? ''}
-          onChange={(e) => {
-            setCurrentUserId(e.target.value);
-            navigate('/');
-          }}
-        >
-          {Object.values(users).map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.nombre} — {u.cargo}
-            </option>
-          ))}
-        </select>
+        {esAdministrador ? (
+          <select
+            className="picker"
+            value={currentUserId ?? ''}
+            onChange={(e) => {
+              setCurrentUserId(e.target.value);
+              navigate('/');
+            }}
+          >
+            {Object.values(users).map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.nombre} — {u.cargo}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="muted" style={{ fontSize: 12.5 }}>
+            {me.nombre} — {me.cargo}
+          </span>
+        )}
         <button
           className={`icon-btn${device === 'mobile' ? ' on' : ''}`}
           title="Vista móvil (bodega)"

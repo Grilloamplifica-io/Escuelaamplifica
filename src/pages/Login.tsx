@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
 export function Login() {
-  const { login, isAuthenticated } = useApp();
+  const { login, isAuthenticated, sincronizando } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [rut, setRut] = useState('');
@@ -16,6 +16,10 @@ export function Login() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (sincronizando) {
+      setError('Todavía estamos sincronizando los datos, espera un momento e intenta de nuevo.');
+      return;
+    }
     const usuario = login(rut, clave);
     if (!usuario) {
       setError('RUT o clave incorrectos.');
@@ -82,7 +86,17 @@ export function Login() {
           {error && (
             <div style={{ color: 'var(--danger)', fontSize: 12.5, marginBottom: 12 }}>{error}</div>
           )}
-          <button className="btn btn-primary" type="submit" style={{ width: '100%', justifyContent: 'center' }}>
+          {sincronizando && !error && (
+            <div className="muted" style={{ fontSize: 12.5, marginBottom: 12 }}>
+              Sincronizando datos…
+            </div>
+          )}
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={sincronizando}
+            style={{ width: '100%', justifyContent: 'center', opacity: sincronizando ? 0.6 : 1 }}
+          >
             Ingresar
           </button>
         </form>

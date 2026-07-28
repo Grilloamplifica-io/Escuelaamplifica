@@ -191,6 +191,17 @@ export const USERS: Record<string, Usuario> = {
     cert: [],
     certificadosExternos: [],
   },
+  // Usuario maestro: siempre existe en cualquier instalación nueva (demo, GitHub Pages, etc.)
+  // aunque todavía no se haya hecho la carga masiva de empleados reales, para no dejar
+  // a nadie sin forma de entrar y administrar la plataforma.
+  u5: {
+    id: 'u5', nombre: 'Matías Fernández Avendaño', cargo: 'Head of People', rol: 'people', contexto: 'oficina', escuela: 'per', color: '#7C5CBF',
+    rut: '19.320.068-0',
+    asign: { c1: 'pendiente' },
+    progreso: {},
+    cert: [],
+    certificadosExternos: [],
+  },
 };
 
 export const EQUIPO_DANIELA: MiembroEquipo[] = [

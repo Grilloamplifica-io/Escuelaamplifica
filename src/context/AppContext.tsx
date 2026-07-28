@@ -39,6 +39,7 @@ interface AppContextValue {
   simMode: boolean;
   toggleSimMode: () => void;
   resetDemo: () => void;
+  sincronizando: boolean;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -67,6 +68,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [simMode, setSimMode] = useState(false);
   const hidratadoRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sincronizando, setSincronizando] = useState(true);
 
   useEffect(() => saveState('users', users), [users]);
   useEffect(() => saveState('cursos', cursos), [cursos]);
@@ -87,6 +89,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await guardarRemoto({ users, cursos, reglas } satisfies EstadoCompartido);
       }
       hidratadoRef.current = true;
+      setSincronizando(false);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     })();
   }, []);
@@ -242,7 +245,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setReglas(REGLAS);
       setCurrentUserId(null);
     },
-  }), [currentUserId, users, cursos, reglas, device, simMode]);
+    sincronizando,
+  }), [currentUserId, users, cursos, reglas, device, simMode, sincronizando]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
