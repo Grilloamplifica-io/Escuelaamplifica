@@ -3,6 +3,7 @@ import { EQUIPO_DANIELA } from '../data/mockData';
 
 export function Equipo() {
   const [rankingOn, setRankingOn] = useState(false);
+  const [enviados, setEnviados] = useState<Record<string, boolean>>({});
   const total = EQUIPO_DANIELA.length;
   const avg = Math.round(EQUIPO_DANIELA.reduce((a, p) => a + p.cumplimiento, 0) / total);
 
@@ -49,7 +50,17 @@ export function Equipo() {
                   </div>
                 </td>
                 <td>{p.pendientes}</td>
-                <td>{p.pendientes > 0 ? <button className="btn btn-outline btn-sm">Enviar recordatorio</button> : null}</td>
+                <td>
+                  {p.pendientes > 0 ? (
+                    <button
+                      className="btn btn-outline btn-sm"
+                      disabled={!!enviados[p.nombre]}
+                      onClick={() => setEnviados((prev) => ({ ...prev, [p.nombre]: true }))}
+                    >
+                      {enviados[p.nombre] ? '✓ Enviado' : 'Enviar recordatorio'}
+                    </button>
+                  ) : null}
+                </td>
               </tr>
             ))}
           </tbody>

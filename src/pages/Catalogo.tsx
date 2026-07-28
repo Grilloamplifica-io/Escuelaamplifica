@@ -1,12 +1,32 @@
+import { useMemo, useState } from 'react';
 import { escuela } from '../data/mockData';
 import { useApp } from '../context/AppContext';
 import { Crest, CourseCard } from '../components/ui';
-import type { Curso } from '../types';
+import type { Curso, CursoTipo } from '../types';
+
+const DIACRITICOS_CATALOGO = new RegExp('[\\u0300-\\u036f]', 'g');
+function normalizarTexto(valor: string): string {
+  return valor.toLowerCase().normalize('NFD').replace(DIACRITICOS_CATALOGO, '');
+}
+
+type Filtro = 'todos' | CursoTipo;
 
 export function Catalogo() {
   const { cursos: todosCursos } = useApp();
+  const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState<Filtro>('todos');
+
+  const cursosFiltrados = useMemo(() => {
+    const termino = normalizarTexto(busqueda.trim());
+    return todosCursos.filter((c) => {
+      if (filtro !== 'todos' && c.tipo !== filtro) return false;
+      if (!termino) return true;
+      return [c.nombre, escuela(c.escuela).nombre].some((v) => normalizarTexto(v).includes(termino));
+    });
+  }, [todosCursos, busqueda, filtro]);
+
   const grupos: Record<string, Curso[]> = {};
-  todosCursos.forEach((c) => {
+  cursosFiltrados.forEach((c) => {
     (grupos[c.escuela] = grupos[c.escuela] || []).push(c);
   });
 
@@ -17,11 +37,24 @@ export function Catalogo() {
         Organizado por Escuela — cada módulo pertenece a un área específica del negocio.
       </div>
       <div className="search-bar">
-        <input placeholder="Buscar curso, escuela o palabra clave…" />
-        <div className="chip active">Todos</div>
-        <div className="chip">Normativo</div>
-        <div className="chip">Interna</div>
+        <input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar curso, escuela o palabra clave…"
+        />
+        <div className={`chip${filtro === 'todos' ? ' active' : ''}`} onClick={() => setFiltro('todos')}>
+          Todos
+        </div>
+        <div className={`chip${filtro === 'normativo' ? ' active' : ''}`} onClick={() => setFiltro('normativo')}>
+          Normativo
+        </div>
+        <div className={`chip${filtro === 'interna' ? ' active' : ''}`} onClick={() => setFiltro('interna')}>
+          Interna
+        </div>
       </div>
+      {Object.keys(grupos).length === 0 && (
+        <div className="empty">No hay cursos que calcen con la búsqueda o filtro elegido.</div>
+      )}
       {Object.entries(grupos).map(([eid, cursos]) => {
         const e = escuela(eid);
         return (

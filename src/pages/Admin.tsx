@@ -398,6 +398,7 @@ function ReglasPorCargo() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NuevaReglaCargoInput>(REGLA_CARGO_FORM_INICIAL);
   const [ultimaAplicada, setUltimaAplicada] = useState<{ cargo: string; afectados: number } | null>(null);
+  const [error, setError] = useState('');
 
   const cargosDisponibles = useMemo(
     () => Array.from(new Set(Object.values(users).map((u) => u.cargo))).sort((a, b) => a.localeCompare(b, 'es')),
@@ -413,7 +414,11 @@ function ReglasPorCargo() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.cargo.trim() || form.cursoIds.length === 0) return;
+    if (!form.cargo.trim() || form.cursoIds.length === 0) {
+      setError('Elige el cargo y al menos un curso antes de aplicar la regla.');
+      return;
+    }
+    setError('');
     const cargoNorm = normalizarTexto(form.cargo.trim());
     const afectados = Object.values(users).filter((u) => normalizarTexto(u.cargo) === cargoNorm).length;
     addReglaCargo({ cargo: form.cargo.trim(), cursoIds: form.cursoIds });
@@ -497,6 +502,9 @@ function ReglasPorCargo() {
               ))}
             </div>
           </div>
+          {error && (
+            <div style={{ color: 'var(--danger)', fontSize: 12.5, margin: '10px 0 0' }}>{error}</div>
+          )}
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <button className="btn btn-accent" type="submit" disabled={!form.cargo.trim() || form.cursoIds.length === 0}>
               Aplicar regla ahora
@@ -1123,6 +1131,7 @@ function CursoCamposForm({
         <div key={i} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <input
+              required
               style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
               value={m.t}
               onChange={(e) => updateModulo(i, { t: e.target.value })}
@@ -1246,6 +1255,7 @@ function BancoPreguntasCurso({ curso: c }: { curso: Curso }) {
               onChange={() => setForm((f) => ({ ...f, correcta: i }))}
             />
             <input
+              required={i < 2}
               style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
               value={op}
               onChange={(e) => updateOpcion(i, e.target.value)}
