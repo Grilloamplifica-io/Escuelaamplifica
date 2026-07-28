@@ -52,13 +52,23 @@ function nuevoId(): string {
   return crypto.randomUUID();
 }
 
-// Repara registros guardados en localStorage antes de que existiera algún campo
-// (ej. certificadosExternos), para que el resto de la app pueda confiar en el tipo Usuario.
+// Repara registros de usuarios que llegan sin algún campo. Pasa esto en dos casos:
+// (1) localStorage guardado antes de que existiera ese campo, y (2) Firebase Realtime
+// Database, que borra silenciosamente cualquier array/objeto vacío al guardarlo (un
+// usuario nuevo con cert: [] o progreso: {} vuelve de la base sin esas claves).
 function normalizarUsuarios(users: Record<string, Usuario>): Record<string, Usuario> {
   return Object.fromEntries(
     Object.entries(users).map(([id, u]) => {
       const crudo = u as Partial<Usuario>;
-      return [id, { certificadosExternos: [], ...crudo } as Usuario];
+      return [
+        id,
+        {
+          certificadosExternos: [],
+          cert: [],
+          progreso: {},
+          ...crudo,
+        } as Usuario,
+      ];
     }),
   );
 }
