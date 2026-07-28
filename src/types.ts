@@ -113,3 +113,14 @@ export interface NuevaReglaInput {
   rol: Rol;
   escuela: string;
 }
+
+export interface ReglaCargo {
+  id: string;
+  cargo: string;
+  cursoIds: string[];
+}
+
+export interface NuevaReglaCargoInput {
+  cargo: string;
+  cursoIds: string[];
+}

@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 import { claveInicialDeRut, soloDigitosRut } from '../utils/rut';
 import { COLUMNAS_PLANTILLA, descargarPlantillaUsuarios, leerUsuariosDesdeArchivo, type FilaImportada } from '../utils/importUsuarios';
 import { exportarCumplimientoCursos, type FilaCumplimientoExport } from '../utils/exportCumplimiento';
-import type { Curso, CursoTipo, EstadoAsignacion, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
+import type { Curso, CursoTipo, EstadoAsignacion, Modulo, NuevaReglaCargoInput, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
 
@@ -56,7 +56,12 @@ export function Admin() {
           Cumplimiento por curso
         </div>
       </div>
-      {tab === 'reglas' && <AdminReglas />}
+      {tab === 'reglas' && (
+        <>
+          <AdminReglas />
+          <ReglasPorCargo />
+        </>
+      )}
       {tab === 'escuelas' && <AdminEscuelas />}
       {tab === 'usuarios' && <AdminUsuarios />}
       {tab === 'cursos' && <AdminCursos />}
@@ -380,6 +385,130 @@ function AdminReglas() {
       ) : (
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
           + Nueva regla
+        </button>
+      )}
+    </div>
+  );
+}
+
+const REGLA_CARGO_FORM_INICIAL: NuevaReglaCargoInput = { cargo: '', cursoIds: [] };
+
+function ReglasPorCargo() {
+  const { reglasCargo, addReglaCargo, eliminarReglaCargo, users, cursos } = useApp();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<NuevaReglaCargoInput>(REGLA_CARGO_FORM_INICIAL);
+  const [ultimaAplicada, setUltimaAplicada] = useState<{ cargo: string; afectados: number } | null>(null);
+
+  const cargosDisponibles = useMemo(
+    () => Array.from(new Set(Object.values(users).map((u) => u.cargo))).sort((a, b) => a.localeCompare(b, 'es')),
+    [users],
+  );
+
+  const toggleCurso = (cursoId: string) => {
+    setForm((f) => ({
+      ...f,
+      cursoIds: f.cursoIds.includes(cursoId) ? f.cursoIds.filter((id) => id !== cursoId) : [...f.cursoIds, cursoId],
+    }));
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!form.cargo.trim() || form.cursoIds.length === 0) return;
+    const cargoNorm = normalizarTexto(form.cargo.trim());
+    const afectados = Object.values(users).filter((u) => normalizarTexto(u.cargo) === cargoNorm).length;
+    addReglaCargo({ cargo: form.cargo.trim(), cursoIds: form.cursoIds });
+    setUltimaAplicada({ cargo: form.cargo.trim(), afectados });
+    setForm(REGLA_CARGO_FORM_INICIAL);
+    setShowForm(false);
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="eyebrow" style={{ margin: 0 }}>
+        Reglas por cargo (asigna varios cursos a la vez)
+      </div>
+      <div className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
+        Elige un cargo exacto (ej. "Operator", "Head of People") y los cursos que quieras habilitar para todas las
+        personas con ese cargo, de una sola vez. Se aplica de inmediato a quienes ya tengan ese cargo hoy, y también
+        a quien se cree a futuro con ese mismo cargo.
+      </div>
+      <div className="divider" />
+
+      {reglasCargo.length === 0 && !showForm && (
+        <div className="muted" style={{ fontSize: 12.5 }}>
+          Aún no hay reglas por cargo.
+        </div>
+      )}
+      {reglasCargo.map((r) => (
+        <div className="rule-card" key={r.id}>
+          <span className="rule-pill">SI</span>
+          <span style={{ fontSize: 13.5 }}>cargo = {r.cargo}</span>
+          <span className="arrow">→</span>
+          <span className="rule-pill" style={{ background: 'var(--azul)' }}>
+            ENTONCES
+          </span>
+          <span style={{ fontSize: 13.5, flex: 1 }}>
+            asigna {r.cursoIds.length} curso{r.cursoIds.length === 1 ? '' : 's'}:{' '}
+            {r.cursoIds.map((cid) => cursos.find((c) => c.id === cid)?.nombre ?? cid).join(', ')}
+          </span>
+          <button className="btn btn-outline btn-sm" onClick={() => eliminarReglaCargo(r.id)}>
+            Eliminar
+          </button>
+        </div>
+      ))}
+
+      {ultimaAplicada && (
+        <div className="muted" style={{ fontSize: 12.5, margin: '10px 0' }}>
+          Regla aplicada: {ultimaAplicada.afectados} colaborador{ultimaAplicada.afectados === 1 ? '' : 'es'} con
+          cargo "{ultimaAplicada.cargo}" recibió los cursos elegidos en estado pendiente.
+        </div>
+      )}
+
+      {showForm ? (
+        <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label htmlFor="regla-cargo">SI cargo =</label>
+            <input
+              id="regla-cargo"
+              list="cargos-existentes"
+              required
+              value={form.cargo}
+              onChange={(e) => setForm((f) => ({ ...f, cargo: e.target.value }))}
+              placeholder="Ej: Operator"
+            />
+            <datalist id="cargos-existentes">
+              {cargosDisponibles.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          </div>
+          <div className="field">
+            <label>ENTONCES asigna estos cursos</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+              {cursos.map((c) => (
+                <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                  <input
+                    type="checkbox"
+                    checked={form.cursoIds.includes(c.id)}
+                    onChange={() => toggleCurso(c.id)}
+                  />
+                  {c.nombre} <span className="muted">· {escuela(c.escuela).nombre}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <button className="btn btn-accent" type="submit" disabled={!form.cargo.trim() || form.cursoIds.length === 0}>
+              Aplicar regla ahora
+            </button>
+            <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>
+          + Nueva regla por cargo
         </button>
       )}
     </div>

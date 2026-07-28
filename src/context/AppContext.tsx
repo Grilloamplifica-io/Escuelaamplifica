@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
-import type { Certificado, CertificadoExterno, Curso, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
+import type { Certificado, CertificadoExterno, Curso, NuevaReglaCargoInput, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, ReglaCargo, Usuario } from '../types';
 import { generarCodigoCertificado, formatearFechaCorta } from '../utils/certificado';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 import { clearState, loadState, saveState } from '../utils/storage';
@@ -10,6 +10,7 @@ interface EstadoCompartido {
   users: Record<string, Usuario>;
   cursos: Curso[];
   reglas: Regla[];
+  reglasCargo: ReglaCargo[];
 }
 
 type Device = 'desktop' | 'mobile';
@@ -29,6 +30,9 @@ interface AppContextValue {
   eliminarCertificadoExterno: (userId: string, certId: string) => void;
   reglas: Regla[];
   addRegla: (input: NuevaReglaInput) => Regla;
+  reglasCargo: ReglaCargo[];
+  addReglaCargo: (input: NuevaReglaCargoInput) => ReglaCargo;
+  eliminarReglaCargo: (id: string) => void;
   cursos: Curso[];
   addCurso: (input: NuevoCursoInput) => Curso;
   editarCurso: (id: string, cambios: NuevoCursoInput) => void;
@@ -59,10 +63,17 @@ function normalizarUsuarios(users: Record<string, Usuario>): Record<string, Usua
   );
 }
 
+const DIACRITICOS_CONTEXT = new RegExp('[\\u0300-\\u036f]', 'g');
+
+function normalizarCargo(cargo: string): string {
+  return cargo.trim().toLowerCase().normalize('NFD').replace(DIACRITICOS_CONTEXT, '');
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<Record<string, Usuario>>(() => normalizarUsuarios(loadState('users', USERS)));
   const [cursos, setCursos] = useState<Curso[]>(() => loadState('cursos', CURSOS));
   const [reglas, setReglas] = useState<Regla[]>(() => loadState('reglas', REGLAS));
+  const [reglasCargo, setReglasCargo] = useState<ReglaCargo[]>(() => loadState('reglasCargo', []));
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadState('currentUserId', null));
   const [device, setDevice] = useState<Device>('desktop');
   const [simMode, setSimMode] = useState(false);
@@ -73,6 +84,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => saveState('users', users), [users]);
   useEffect(() => saveState('cursos', cursos), [cursos]);
   useEffect(() => saveState('reglas', reglas), [reglas]);
+  useEffect(() => saveState('reglasCargo', reglasCargo), [reglasCargo]);
   useEffect(() => saveState('currentUserId', currentUserId), [currentUserId]);
 
   // Sincronización con Firebase: al montar, si ya hay datos compartidos en la
@@ -85,8 +97,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUsers(normalizarUsuarios(remoto.users));
         setCursos(remoto.cursos ?? CURSOS);
         setReglas(remoto.reglas ?? REGLAS);
+        setReglasCargo(remoto.reglasCargo ?? []);
       } else {
-        await guardarRemoto({ users, cursos, reglas } satisfies EstadoCompartido);
+        await guardarRemoto({ users, cursos, reglas, reglasCargo } satisfies EstadoCompartido);
       }
       hidratadoRef.current = true;
       setSincronizando(false);
@@ -101,12 +114,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!hidratadoRef.current) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      guardarRemoto({ users, cursos, reglas } satisfies EstadoCompartido);
+      guardarRemoto({ users, cursos, reglas, reglasCargo } satisfies EstadoCompartido);
     }, 800);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [users, cursos, reglas]);
+  }, [users, cursos, reglas, reglasCargo]);
 
   const value = useMemo<AppContextValue>(() => ({
     currentUserId,
@@ -202,6 +215,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setReglas((prev) => [...prev, nueva]);
       return nueva;
     },
+    reglasCargo,
+    addReglaCargo: (input) => {
+      const nueva: ReglaCargo = { id: nuevoId(), ...input };
+      setReglasCargo((prev) => [...prev, nueva]);
+      // Aplica de inmediato a todos los colaboradores existentes con ese cargo
+      // (no solo a los que se creen a futuro), para poder asignar varios
+      // cursos a la vez a quienes ya están cargados en la Academia.
+      const cargoNorm = normalizarCargo(input.cargo);
+      setUsers((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).map(([id, u]) => {
+            if (normalizarCargo(u.cargo) !== cargoNorm) return [id, u];
+            const asign = { ...u.asign };
+            input.cursoIds.forEach((cid) => {
+              if (!asign[cid]) asign[cid] = 'pendiente';
+            });
+            return [id, { ...u, asign }];
+          }),
+        ),
+      );
+      return nueva;
+    },
+    eliminarReglaCargo: (id) => {
+      setReglasCargo((prev) => prev.filter((r) => r.id !== id));
+    },
     cursos,
     addCurso: (input) => {
       const id = nuevoId();
@@ -239,14 +277,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     simMode,
     toggleSimMode: () => setSimMode((s) => !s),
     resetDemo: () => {
-      clearState(['users', 'cursos', 'reglas', 'currentUserId']);
+      clearState(['users', 'cursos', 'reglas', 'reglasCargo', 'currentUserId']);
       setUsers(USERS);
       setCursos(CURSOS);
       setReglas(REGLAS);
+      setReglasCargo([]);
       setCurrentUserId(null);
     },
     sincronizando,
-  }), [currentUserId, users, cursos, reglas, device, simMode, sincronizando]);
+  }), [currentUserId, users, cursos, reglas, reglasCargo, device, simMode, sincronizando]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
