@@ -15,7 +15,7 @@ function normalizarTexto(valor: string): string {
   return valor.toLowerCase().normalize('NFD').replace(DIACRITICOS_ADMIN, '');
 }
 
-type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos' | 'ranking';
+type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos' | 'ranking' | 'cumplimiento';
 
 export function Admin() {
   const { resetDemo } = useApp();
@@ -51,12 +51,78 @@ export function Admin() {
         <div className={`tab${tab === 'ranking' ? ' active' : ''}`} onClick={() => setTab('ranking')}>
           Ranking
         </div>
+        <div className={`tab${tab === 'cumplimiento' ? ' active' : ''}`} onClick={() => setTab('cumplimiento')}>
+          Cumplimiento por curso
+        </div>
       </div>
       {tab === 'reglas' && <AdminReglas />}
       {tab === 'escuelas' && <AdminEscuelas />}
       {tab === 'usuarios' && <AdminUsuarios />}
       {tab === 'cursos' && <AdminCursos />}
       {tab === 'ranking' && <AdminRanking />}
+      {tab === 'cumplimiento' && <AdminCumplimientoCursos />}
+    </div>
+  );
+}
+
+interface FilaCumplimientoCurso {
+  curso: Curso;
+  asignados: number;
+  aprobados: number;
+  enDesarrollo: number;
+  pendientes: number;
+  pctAprobado: number;
+}
+
+function AdminCumplimientoCursos() {
+  const { cursos, users } = useApp();
+  const usuarios = Object.values(users);
+
+  const filas: FilaCumplimientoCurso[] = cursos
+    .map((curso) => {
+      const estados = usuarios.map((u) => u.asign[curso.id]).filter(Boolean);
+      const asignados = estados.length;
+      const aprobados = estados.filter((e) => e === 'aprobado').length;
+      const enDesarrollo = estados.filter((e) => e === 'desarrollo').length;
+      const pendientes = estados.filter((e) => e === 'pendiente').length;
+      const pctAprobado = asignados > 0 ? Math.round((aprobados / asignados) * 100) : 0;
+      return { curso, asignados, aprobados, enDesarrollo, pendientes, pctAprobado };
+    })
+    .sort((a, b) => b.asignados - a.asignados || a.curso.nombre.localeCompare(b.curso.nombre, 'es'));
+
+  return (
+    <div>
+      <div className="muted" style={{ fontSize: 12.5, margin: '4px 0 16px' }}>
+        Para cada curso, de las personas que lo tienen habilitado/asignado, qué porcentaje ya lo aprobó. Los cursos
+        sin nadie asignado no aparecen.
+      </div>
+      {filas.filter((f) => f.asignados > 0).length === 0 && (
+        <div className="empty">Aún no hay cursos asignados para calcular cumplimiento.</div>
+      )}
+      {filas
+        .filter((f) => f.asignados > 0)
+        .map((f) => (
+          <div className="card" key={f.curso.id} style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <Crest escuela={escuela(f.curso.escuela)} sm />
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{f.curso.nombre}</div>
+                <div className="muted" style={{ fontSize: 12 }}>
+                  {escuela(f.curso.escuela).nombre} · {f.asignados} habilitado{f.asignados === 1 ? '' : 's'}
+                </div>
+              </div>
+              <BadgeTipo tipo={f.curso.tipo} />
+              <div className="progress" style={{ width: 140 }}>
+                <span style={{ width: `${f.pctAprobado}%`, background: f.pctAprobado >= 80 ? 'var(--success)' : 'var(--azul)' }} />
+              </div>
+              <b style={{ fontSize: 15, minWidth: 46, textAlign: 'right' }}>{f.pctAprobado}%</b>
+            </div>
+            <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+              {f.aprobados} aprobado{f.aprobados === 1 ? '' : 's'} · {f.enDesarrollo} en desarrollo · {f.pendientes} pendiente
+              {f.pendientes === 1 ? '' : 's'}
+            </div>
+          </div>
+        ))}
     </div>
   );
 }
