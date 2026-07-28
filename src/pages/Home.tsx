@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp, useCurrentUser } from '../context/AppContext';
 import { escuela } from '../data/mockData';
@@ -7,6 +8,7 @@ import type { EstadoAsignacion } from '../types';
 export function Home() {
   const u = useCurrentUser();
   const { cursos } = useApp();
+  const [avisoOculto, setAvisoOculto] = useState(false);
   const curso = (id: string) => cursos.find((c) => c.id === id)!;
   const asignEntries = Object.entries(u.asign) as [string, EstadoAsignacion][];
   const counts: Record<string, number> = { pendiente: 0, desarrollo: 0, aprobado: 0 };
@@ -19,12 +21,46 @@ export function Home() {
   const vencimientos = asignEntries
     .filter(([id, est]) => est !== 'aprobado' && curso(id).tipo === 'normativo')
     .map(([id]) => curso(id));
+  const pendientesUrgentes = asignEntries.filter(([, est]) => est === 'pendiente' || est === 'vencido');
 
   return (
     <div data-fade>
       <div className="eyebrow">{u.contexto === 'bodega' ? 'Vista bodega · mobile-first' : 'Hola de nuevo'}</div>
       <h1 className="h-title">Bienvenido/a, {u.nombre}</h1>
       <div className="divider" />
+
+      {!avisoOculto && pendientesUrgentes.length > 0 && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 20,
+            background: 'var(--danger-bg, #fdecea)',
+            border: '1px solid var(--danger, #d64545)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700 }}>
+              Tienes {pendientesUrgentes.length} curso{pendientesUrgentes.length > 1 ? 's' : ''} pendiente
+              {pendientesUrgentes.length > 1 ? 's' : ''} de completar
+            </div>
+            <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+              Revisa tu catálogo y complétalos antes de la fecha límite.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <Link className="btn btn-primary btn-sm" to="/catalogo">
+              Ver cursos
+            </Link>
+            <button className="btn btn-outline btn-sm" onClick={() => setAvisoOculto(true)}>
+              Ocultar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid cols-4" style={{ marginBottom: 20 }}>
         <div className="card stat-card">
