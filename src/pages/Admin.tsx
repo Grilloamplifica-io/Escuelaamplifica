@@ -5,6 +5,7 @@ import { BadgeEstado, BadgeTipo, Crest } from '../components/ui';
 import { useApp } from '../context/AppContext';
 import { claveInicialDeRut, soloDigitosRut } from '../utils/rut';
 import { COLUMNAS_PLANTILLA, descargarPlantillaUsuarios, leerUsuariosDesdeArchivo, type FilaImportada } from '../utils/importUsuarios';
+import { exportarCumplimientoCursos, type FilaCumplimientoExport } from '../utils/exportCumplimiento';
 import type { Curso, CursoTipo, EstadoAsignacion, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
@@ -65,20 +66,12 @@ export function Admin() {
   );
 }
 
-interface FilaCumplimientoCurso {
-  curso: Curso;
-  asignados: number;
-  aprobados: number;
-  enDesarrollo: number;
-  pendientes: number;
-  vencidos: number;
-  pctAprobado: number;
-  usuariosPorEstado: Record<EstadoAsignacion, Usuario[]>;
-}
+type FilaCumplimientoCurso = FilaCumplimientoExport;
 
 function AdminCumplimientoCursos() {
   const { cursos, users } = useApp();
   const usuarios = Object.values(users);
+  const [exportando, setExportando] = useState(false);
 
   const filas: FilaCumplimientoCurso[] = cursos
     .map((curso) => {
@@ -105,20 +98,39 @@ function AdminCumplimientoCursos() {
     })
     .sort((a, b) => b.asignados - a.asignados || a.curso.nombre.localeCompare(b.curso.nombre, 'es'));
 
+  const filasConDatos = filas.filter((f) => f.asignados > 0);
+
+  const handleExportar = async () => {
+    setExportando(true);
+    try {
+      await exportarCumplimientoCursos(filasConDatos);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   return (
     <div>
-      <div className="muted" style={{ fontSize: 12.5, margin: '4px 0 16px' }}>
-        Para cada curso, de las personas que lo tienen habilitado/asignado, qué porcentaje ya lo aprobó. Los cursos
-        sin nadie asignado no aparecen.
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 4 }}>
+        <div className="muted" style={{ fontSize: 12.5 }}>
+          Para cada curso, de las personas que lo tienen habilitado/asignado, qué porcentaje ya lo aprobó. Los cursos
+          sin nadie asignado no aparecen.
+        </div>
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={handleExportar}
+          disabled={exportando || filasConDatos.length === 0}
+        >
+          {exportando ? 'Exportando…' : 'Exportar a Excel'}
+        </button>
       </div>
-      {filas.filter((f) => f.asignados > 0).length === 0 && (
+      <div style={{ marginBottom: 12 }} />
+      {filasConDatos.length === 0 && (
         <div className="empty">Aún no hay cursos asignados para calcular cumplimiento.</div>
       )}
-      {filas
-        .filter((f) => f.asignados > 0)
-        .map((f) => (
-          <CumplimientoCurso fila={f} key={f.curso.id} />
-        ))}
+      {filasConDatos.map((f) => (
+        <CumplimientoCurso fila={f} key={f.curso.id} />
+      ))}
     </div>
   );
 }
