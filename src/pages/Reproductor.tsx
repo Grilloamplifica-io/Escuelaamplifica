@@ -4,7 +4,7 @@ import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
 import { iconFor } from '../components/ui';
 import { esArchivoDeVideoDirecto, idDeYoutube, urlEmbebida } from '../utils/embedUrl';
 
-const SEGUNDOS_MINIMOS_VIDEO_SIMULADO = 8;
+const SEGUNDOS_MINIMOS_VIDEO_SIMULADO = 60;
 
 declare global {
   interface Window {
@@ -22,7 +22,7 @@ export function Reproductor() {
   const [moduloIdx, setModuloIdx] = useState(0);
   const [checklistDone, setChecklistDone] = useState<Record<number, boolean>>({});
   const [videoListo, setVideoListo] = useState(false);
-  const [segundosRestantes, setSegundosRestantes] = useState(0);
+  const [, setSegundosRestantes] = useState(0);
 
   useEffect(() => {
     setModuloIdx(0);
@@ -86,8 +86,10 @@ export function Reproductor() {
       };
     }
 
-    // Drive u otro link no verificable, o modo simulado sin link: gate por tiempo mínimo.
-    setSegundosRestantes(SEGUNDOS_MINIMOS_VIDEO_SIMULADO);
+    // Drive u otro link no verificable, o modo simulado sin link: gate por tiempo mínimo,
+    // usando la duración real del video si el admin la cargó (o un mínimo por defecto si no).
+    const minimo = m.duracionMinutos && m.duracionMinutos > 0 ? m.duracionMinutos * 60 : SEGUNDOS_MINIMOS_VIDEO_SIMULADO;
+    setSegundosRestantes(minimo);
     const interval = setInterval(() => {
       setSegundosRestantes((s) => {
         if (s <= 1) {
@@ -100,7 +102,7 @@ export function Reproductor() {
     }, 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, m.tipo, m.archivoUrl]);
+  }, [idx, m.tipo, m.archivoUrl, m.duracionMinutos]);
 
   const puedeAvanzar = m.tipo !== 'video' || videoListo;
 
@@ -149,8 +151,8 @@ export function Reproductor() {
               />
               {!videoListo && (
                 <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                  Podrás continuar en {segundosRestantes}s (no se puede confirmar automáticamente que este tipo de
-                  link se vio completo).
+                  Termina de ver el video completo para poder continuar (no se puede confirmar automáticamente que
+                  este tipo de link se vio completo).
                 </div>
               )}
             </div>
@@ -173,7 +175,7 @@ export function Reproductor() {
               </div>
               {m.tipo === 'video' && !videoListo && (
                 <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-                  Podrás continuar en {segundosRestantes}s
+                  Termina de ver el video completo para poder continuar.
                 </div>
               )}
             </div>

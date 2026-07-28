@@ -6,6 +6,7 @@ export interface Modulo {
   items?: string[];
   archivoUrl?: string;
   archivoNombre?: string;
+  duracionMinutos?: number;
 }
 
 export interface QuizPregunta {

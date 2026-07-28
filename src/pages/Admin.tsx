@@ -1153,9 +1153,9 @@ function CursoCamposForm({
             )}
           </div>
           {(m.tipo === 'video' || m.tipo === 'pdf') && (
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>
               <input
-                style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
+                style={{ flex: 1, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
                 value={m.archivoUrl ?? ''}
                 onChange={(e) => updateModulo(i, { archivoUrl: e.target.value })}
                 placeholder={
@@ -1164,6 +1164,17 @@ function CursoCamposForm({
                     : 'Link del documento (Google Drive o URL directa al PDF)'
                 }
               />
+              {m.tipo === 'video' && (
+                <input
+                  type="number"
+                  min={1}
+                  style={{ width: 140, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
+                  value={m.duracionMinutos ?? ''}
+                  onChange={(e) => updateModulo(i, { duracionMinutos: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="Duración (min)"
+                  title="Duración del video en minutos: la persona debe esperar al menos ese tiempo antes de poder continuar (para links de Drive u otros donde no se puede detectar automáticamente que el video terminó)."
+                />
+              )}
             </div>
           )}
         </div>
