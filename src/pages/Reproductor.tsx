@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
 import { iconFor } from '../components/ui';
-import { esArchivoDeVideoDirecto, urlEmbebida } from '../utils/embedUrl';
+import { esArchivoDeVideoDirecto, idDeYoutube, urlEmbebida } from '../utils/embedUrl';
+
+const SEGUNDOS_MINIMOS_VIDEO_SIMULADO = 8;
+
+declare global {
+  interface Window {
+    YT?: { Player: new (el: string, opts: unknown) => { destroy: () => void }; PlayerState: { ENDED: number } };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
 
 export function Reproductor() {
   const { id = '' } = useParams();
@@ -12,6 +21,8 @@ export function Reproductor() {
   const c = useCurso(id);
   const [moduloIdx, setModuloIdx] = useState(0);
   const [checklistDone, setChecklistDone] = useState<Record<number, boolean>>({});
+  const [videoListo, setVideoListo] = useState(false);
+  const [segundosRestantes, setSegundosRestantes] = useState(0);
 
   useEffect(() => {
     setModuloIdx(0);
@@ -21,11 +32,77 @@ export function Reproductor() {
   const idx = Math.min(moduloIdx, c.modulos.length - 1);
   const m = c.modulos[idx];
   const isLast = idx === c.modulos.length - 1;
+  const ytId = m.tipo === 'video' && m.archivoUrl ? idDeYoutube(m.archivoUrl) : null;
+  const esVideoDirecto = m.tipo === 'video' && !!m.archivoUrl && esArchivoDeVideoDirecto(m.archivoUrl);
 
   const goToModulo = (next: number) => {
     setModuloIdx(next);
     setChecklistDone({});
   };
+
+  // Cada módulo de video exige haberlo visto completo antes de habilitar "continuar"/
+  // "completado". Para un archivo real usamos el evento onEnded; para YouTube, la
+  // IFrame Player API; para cualquier otro caso (Drive u modo simulado, donde no hay
+  // forma de saber si realmente se vio) exigimos al menos unos segundos en la pantalla.
+  useEffect(() => {
+    setVideoListo(m.tipo !== 'video');
+    if (m.tipo !== 'video') return;
+
+    if (esVideoDirecto) return; // se resuelve con el onEnded del <video>
+
+    if (ytId) {
+      let player: { destroy: () => void } | undefined;
+      let cancelado = false;
+      const contenedorId = `yt-player-${idx}`;
+      const crearPlayer = () => {
+        if (cancelado || !window.YT) return;
+        player = new window.YT.Player(contenedorId, {
+          videoId: ytId,
+          events: {
+            onStateChange: (e: { data: number }) => {
+              if (window.YT && e.data === window.YT.PlayerState.ENDED) setVideoListo(true);
+            },
+          },
+        });
+      };
+      if (window.YT?.Player) {
+        crearPlayer();
+      } else {
+        const previo = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => {
+          previo?.();
+          crearPlayer();
+        };
+        if (!document.getElementById('youtube-iframe-api')) {
+          const tag = document.createElement('script');
+          tag.id = 'youtube-iframe-api';
+          tag.src = 'https://www.youtube.com/iframe_api';
+          document.body.appendChild(tag);
+        }
+      }
+      return () => {
+        cancelado = true;
+        player?.destroy();
+      };
+    }
+
+    // Drive u otro link no verificable, o modo simulado sin link: gate por tiempo mínimo.
+    setSegundosRestantes(SEGUNDOS_MINIMOS_VIDEO_SIMULADO);
+    const interval = setInterval(() => {
+      setSegundosRestantes((s) => {
+        if (s <= 1) {
+          clearInterval(interval);
+          setVideoListo(true);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, m.tipo, m.archivoUrl]);
+
+  const puedeAvanzar = m.tipo !== 'video' || videoListo;
 
   return (
     <div data-fade>
@@ -51,16 +128,32 @@ export function Reproductor() {
                 </label>
               ))}
             </div>
-          ) : m.tipo === 'video' && m.archivoUrl && esArchivoDeVideoDirecto(m.archivoUrl) ? (
-            <video src={m.archivoUrl} controls style={{ width: '100%', borderRadius: 12, background: '#000' }} />
-          ) : m.tipo === 'video' && m.archivoUrl ? (
-            <iframe
-              src={urlEmbebida(m.archivoUrl)}
-              title={m.t}
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              style={{ width: '100%', height: 340, border: 'none', borderRadius: 12 }}
+          ) : m.tipo === 'video' && esVideoDirecto ? (
+            <video
+              key={idx}
+              src={m.archivoUrl}
+              controls
+              onEnded={() => setVideoListo(true)}
+              style={{ width: '100%', borderRadius: 12, background: '#000' }}
             />
+          ) : m.tipo === 'video' && ytId ? (
+            <div id={`yt-player-${idx}`} style={{ width: '100%', height: 340, borderRadius: 12, overflow: 'hidden' }} />
+          ) : m.tipo === 'video' && m.archivoUrl ? (
+            <div>
+              <iframe
+                src={urlEmbebida(m.archivoUrl)}
+                title={m.t}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                style={{ width: '100%', height: 340, border: 'none', borderRadius: 12 }}
+              />
+              {!videoListo && (
+                <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                  Podrás continuar en {segundosRestantes}s (no se puede confirmar automáticamente que este tipo de
+                  link se vio completo).
+                </div>
+              )}
+            </div>
           ) : m.tipo === 'pdf' && m.archivoUrl ? (
             <div>
               <iframe
@@ -78,6 +171,17 @@ export function Reproductor() {
               <div style={{ fontSize: 13, opacity: 0.75 }}>
                 {m.tipo === 'video' ? 'Reproduciendo cápsula (simulado)' : 'Visor de documento (simulado)'}
               </div>
+              {m.tipo === 'video' && !videoListo && (
+                <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                  Podrás continuar en {segundosRestantes}s
+                </div>
+              )}
+            </div>
+          )}
+
+          {m.tipo === 'video' && !videoListo && (
+            <div className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
+              Debes terminar de ver el video para poder continuar.
             </div>
           )}
 
@@ -87,12 +191,13 @@ export function Reproductor() {
             </button>
             {isLast ? (
               c.quiz ? (
-                <button className="btn btn-accent" onClick={() => navigate(`/evaluacion/${c.id}`)}>
+                <button className="btn btn-accent" disabled={!puedeAvanzar} onClick={() => navigate(`/evaluacion/${c.id}`)}>
                   Ir a la evaluación →
                 </button>
               ) : (
                 <button
                   className="btn btn-accent"
+                  disabled={!puedeAvanzar}
                   onClick={() => {
                     aprobarCurso(me.id, c.id);
                     navigate(`/certificado/${c.id}`);
@@ -102,7 +207,7 @@ export function Reproductor() {
                 </button>
               )
             ) : (
-              <button className="btn btn-primary" onClick={() => goToModulo(idx + 1)}>
+              <button className="btn btn-primary" disabled={!puedeAvanzar} onClick={() => goToModulo(idx + 1)}>
                 Marcar como visto y continuar →
               </button>
             )}

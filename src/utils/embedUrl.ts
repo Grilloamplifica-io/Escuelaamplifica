@@ -2,7 +2,7 @@
 // que se puede embeber en un <iframe>. Si no reconoce el link, lo deja tal cual
 // (asumiendo que ya es una URL directa de archivo, ej. un .mp4 o .pdf público).
 
-function idDeYoutube(url: string): string | null {
+export function idDeYoutube(url: string): string | null {
   const patrones = [
     /youtube\.com\/watch\?v=([\w-]+)/,
     /youtu\.be\/([\w-]+)/,
