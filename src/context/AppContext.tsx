@@ -25,6 +25,7 @@ interface AppContextValue {
   users: Record<string, Usuario>;
   addUser: (input: NuevoUsuarioInput) => Usuario;
   asignarCursoAUsuario: (userId: string, cursoId: string) => void;
+  reiniciarCursoDeUsuario: (userId: string, cursoId: string) => void;
   aprobarCurso: (userId: string, cursoId: string) => Certificado;
   addCertificadoExterno: (userId: string, input: NuevoCertificadoExternoInput) => CertificadoExterno;
   eliminarCertificadoExterno: (userId: string, certId: string) => void;
@@ -179,6 +180,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const u = prev[userId];
         if (!u || u.asign[cursoId]) return prev;
         return { ...prev, [userId]: { ...u, asign: { ...u.asign, [cursoId]: 'pendiente' } } };
+      });
+    },
+    reiniciarCursoDeUsuario: (userId, cursoId) => {
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u || !u.asign[cursoId]) return prev;
+        const { [cursoId]: _progreso, ...progreso } = u.progreso;
+        return {
+          ...prev,
+          [userId]: {
+            ...u,
+            asign: { ...u.asign, [cursoId]: 'pendiente' },
+            progreso,
+            cert: u.cert.filter((c) => c.cursoId !== cursoId),
+          },
+        };
       });
     },
     aprobarCurso: (userId, cursoId) => {

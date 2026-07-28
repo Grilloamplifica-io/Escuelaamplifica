@@ -859,9 +859,16 @@ function UsuarioConCursos({ usuario: u }: { usuario: Usuario }) {
 }
 
 function CursosDeUsuario({ usuario: u }: { usuario: Usuario }) {
-  const { cursos, asignarCursoAUsuario } = useApp();
+  const { cursos, asignarCursoAUsuario, reiniciarCursoDeUsuario } = useApp();
   const asignados = cursos.filter((c) => u.asign[c.id]);
   const disponibles = cursos.filter((c) => !u.asign[c.id]);
+
+  const reiniciar = (c: Curso) => {
+    const confirmado = window.confirm(
+      `¿Reiniciar "${c.nombre}" para ${u.nombre}? Vuelve a quedar pendiente, se borra su avance y el certificado obtenido (si tenía).`,
+    );
+    if (confirmado) reiniciarCursoDeUsuario(u.id, c.id);
+  };
 
   return (
     <div>
@@ -870,7 +877,12 @@ function CursosDeUsuario({ usuario: u }: { usuario: Usuario }) {
         asignados.map((c) => (
           <div className="venc-row" key={c.id}>
             <span>{c.nombre}</span>
-            <BadgeEstado estado={u.asign[c.id]} />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <BadgeEstado estado={u.asign[c.id]} />
+              <button className="btn btn-outline btn-sm" onClick={() => reiniciar(c)}>
+                Reiniciar
+              </button>
+            </div>
           </div>
         ))
       ) : (
