@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ESCUELAS, escuela } from '../data/mockData';
 import { BadgeEstado, BadgeTipo, Crest } from '../components/ui';
@@ -8,6 +8,12 @@ import { COLUMNAS_PLANTILLA, descargarPlantillaUsuarios, leerUsuariosDesdeArchiv
 import type { Curso, CursoTipo, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
+
+const DIACRITICOS_ADMIN = new RegExp('[\\u0300-\\u036f]', 'g');
+
+function normalizarTexto(valor: string): string {
+  return valor.toLowerCase().normalize('NFD').replace(DIACRITICOS_ADMIN, '');
+}
 
 type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos' | 'ranking';
 
@@ -282,6 +288,18 @@ function AdminUsuarios() {
   const [ultimoCreado, setUltimoCreado] = useState<Usuario | null>(null);
   const [importando, setImportando] = useState(false);
   const [resultadoImport, setResultadoImport] = useState<{ creados: number; errores: FilaImportada[] } | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+
+  const usuariosOrdenados = useMemo(() => {
+    const termino = normalizarTexto(busqueda.trim());
+    return Object.values(users)
+      .filter(
+        (u) =>
+          !termino ||
+          [u.nombre, u.cargo, u.rut].some((valor) => normalizarTexto(valor).includes(termino)),
+      )
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }, [users, busqueda]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -484,7 +502,21 @@ function AdminUsuarios() {
         </div>
       )}
 
-      {Object.values(users).map((u) => (
+      <div className="field" style={{ marginBottom: 12 }}>
+        <label htmlFor="buscar-usuarios">Buscar colaborador</label>
+        <input
+          id="buscar-usuarios"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Busca por nombre, apellido, cargo o RUT…"
+        />
+      </div>
+      <div className="muted" style={{ fontSize: 12.5, marginBottom: 12 }}>
+        {usuariosOrdenados.length} de {Object.keys(users).length} colaborador
+        {Object.keys(users).length === 1 ? '' : 'es'}, ordenados alfabéticamente.
+      </div>
+
+      {usuariosOrdenados.map((u) => (
         <UsuarioConCursos usuario={u} key={u.id} />
       ))}
     </div>

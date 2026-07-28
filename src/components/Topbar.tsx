@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp, useCurrentUser } from '../context/AppContext';
 import logoAmplifica from '../assets/brand/logo.png';
@@ -24,6 +25,11 @@ export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const usuariosOrdenados = useMemo(
+    () => Object.values(users).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
+    [users],
+  );
+
   return (
     <div id="topbar">
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -42,7 +48,7 @@ export function Topbar() {
               navigate('/');
             }}
           >
-            {Object.values(users).map((u) => (
+            {usuariosOrdenados.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.nombre} — {u.cargo}
               </option>
