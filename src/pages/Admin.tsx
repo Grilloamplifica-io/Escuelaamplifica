@@ -5,7 +5,7 @@ import { BadgeEstado, BadgeTipo, Crest } from '../components/ui';
 import { useApp } from '../context/AppContext';
 import { claveInicialDeRut, soloDigitosRut } from '../utils/rut';
 import { COLUMNAS_PLANTILLA, descargarPlantillaUsuarios, leerUsuariosDesdeArchivo, type FilaImportada } from '../utils/importUsuarios';
-import type { Curso, CursoTipo, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
+import type { Curso, CursoTipo, EstadoAsignacion, Modulo, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
 
@@ -71,7 +71,9 @@ interface FilaCumplimientoCurso {
   aprobados: number;
   enDesarrollo: number;
   pendientes: number;
+  vencidos: number;
   pctAprobado: number;
+  usuariosPorEstado: Record<EstadoAsignacion, Usuario[]>;
 }
 
 function AdminCumplimientoCursos() {
@@ -80,13 +82,26 @@ function AdminCumplimientoCursos() {
 
   const filas: FilaCumplimientoCurso[] = cursos
     .map((curso) => {
-      const estados = usuarios.map((u) => u.asign[curso.id]).filter(Boolean);
-      const asignados = estados.length;
-      const aprobados = estados.filter((e) => e === 'aprobado').length;
-      const enDesarrollo = estados.filter((e) => e === 'desarrollo').length;
-      const pendientes = estados.filter((e) => e === 'pendiente').length;
+      const asignadosCon = usuarios
+        .map((u) => ({ usuario: u, estado: u.asign[curso.id] }))
+        .filter((x): x is { usuario: Usuario; estado: EstadoAsignacion } => Boolean(x.estado));
+      const usuariosPorEstado: Record<EstadoAsignacion, Usuario[]> = {
+        aprobado: [],
+        desarrollo: [],
+        pendiente: [],
+        vencido: [],
+      };
+      asignadosCon.forEach(({ usuario, estado }) => usuariosPorEstado[estado].push(usuario));
+      (Object.keys(usuariosPorEstado) as EstadoAsignacion[]).forEach((estado) =>
+        usuariosPorEstado[estado].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
+      );
+      const asignados = asignadosCon.length;
+      const aprobados = usuariosPorEstado.aprobado.length;
+      const enDesarrollo = usuariosPorEstado.desarrollo.length;
+      const pendientes = usuariosPorEstado.pendiente.length;
+      const vencidos = usuariosPorEstado.vencido.length;
       const pctAprobado = asignados > 0 ? Math.round((aprobados / asignados) * 100) : 0;
-      return { curso, asignados, aprobados, enDesarrollo, pendientes, pctAprobado };
+      return { curso, asignados, aprobados, enDesarrollo, pendientes, vencidos, pctAprobado, usuariosPorEstado };
     })
     .sort((a, b) => b.asignados - a.asignados || a.curso.nombre.localeCompare(b.curso.nombre, 'es'));
 
@@ -102,27 +117,87 @@ function AdminCumplimientoCursos() {
       {filas
         .filter((f) => f.asignados > 0)
         .map((f) => (
-          <div className="card" key={f.curso.id} style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <Crest escuela={escuela(f.curso.escuela)} sm />
-              <div style={{ flex: 1, minWidth: 160 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{f.curso.nombre}</div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  {escuela(f.curso.escuela).nombre} · {f.asignados} habilitado{f.asignados === 1 ? '' : 's'}
-                </div>
-              </div>
-              <BadgeTipo tipo={f.curso.tipo} />
-              <div className="progress" style={{ width: 140 }}>
-                <span style={{ width: `${f.pctAprobado}%`, background: f.pctAprobado >= 80 ? 'var(--success)' : 'var(--azul)' }} />
-              </div>
-              <b style={{ fontSize: 15, minWidth: 46, textAlign: 'right' }}>{f.pctAprobado}%</b>
-            </div>
-            <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-              {f.aprobados} aprobado{f.aprobados === 1 ? '' : 's'} · {f.enDesarrollo} en desarrollo · {f.pendientes} pendiente
-              {f.pendientes === 1 ? '' : 's'}
-            </div>
-          </div>
+          <CumplimientoCurso fila={f} key={f.curso.id} />
         ))}
+    </div>
+  );
+}
+
+function CumplimientoCurso({ fila: f }: { fila: FilaCumplimientoCurso }) {
+  const [expandido, setExpandido] = useState(false);
+
+  return (
+    <div className="card" style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <Crest escuela={escuela(f.curso.escuela)} sm />
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{f.curso.nombre}</div>
+          <div className="muted" style={{ fontSize: 12 }}>
+            {escuela(f.curso.escuela).nombre} · {f.asignados} habilitado{f.asignados === 1 ? '' : 's'}
+          </div>
+        </div>
+        <BadgeTipo tipo={f.curso.tipo} />
+        <div className="progress" style={{ width: 140 }}>
+          <span style={{ width: `${f.pctAprobado}%`, background: f.pctAprobado >= 80 ? 'var(--success)' : 'var(--azul)' }} />
+        </div>
+        <b style={{ fontSize: 15, minWidth: 46, textAlign: 'right' }}>{f.pctAprobado}%</b>
+        <button className="btn btn-outline btn-sm" onClick={() => setExpandido((v) => !v)}>
+          {expandido ? 'Ocultar detalle' : 'Ver detalle'}
+        </button>
+      </div>
+      <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+        {f.aprobados} aprobado{f.aprobados === 1 ? '' : 's'} · {f.enDesarrollo} en desarrollo · {f.pendientes} pendiente
+        {f.pendientes === 1 ? '' : 's'}
+        {f.vencidos > 0 ? ` · ${f.vencidos} vencido${f.vencidos === 1 ? '' : 's'}` : ''}
+      </div>
+
+      {expandido && (
+        <>
+          <div className="divider" />
+          <div className="grid cols-3" style={{ gap: 14, alignItems: 'start' }}>
+            <DetalleEstadoCurso titulo="Aprobados" usuarios={f.usuariosPorEstado.aprobado} estado="aprobado" />
+            <DetalleEstadoCurso titulo="En desarrollo" usuarios={f.usuariosPorEstado.desarrollo} estado="desarrollo" />
+            <DetalleEstadoCurso titulo="Pendientes (falta)" usuarios={f.usuariosPorEstado.pendiente} estado="pendiente" />
+            {f.vencidos > 0 && (
+              <DetalleEstadoCurso titulo="Vencidos (falta)" usuarios={f.usuariosPorEstado.vencido} estado="vencido" />
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DetalleEstadoCurso({
+  titulo,
+  usuarios,
+  estado,
+}: {
+  titulo: string;
+  usuarios: Usuario[];
+  estado: EstadoAsignacion;
+}) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <BadgeEstado estado={estado} />
+        <b style={{ fontSize: 12.5 }}>
+          {titulo} ({usuarios.length})
+        </b>
+      </div>
+      {usuarios.length === 0 ? (
+        <div className="muted" style={{ fontSize: 12 }}>
+          Nadie en este estado.
+        </div>
+      ) : (
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
+          {usuarios.map((u) => (
+            <li key={u.id}>
+              {u.nombre} <span className="muted">· {u.cargo}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
