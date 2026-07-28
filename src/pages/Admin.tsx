@@ -645,10 +645,16 @@ function AdminCursos() {
 }
 
 function CursoConBanco({ curso: c }: { curso: Curso }) {
-  const { editarCurso } = useApp();
+  const { editarCurso, eliminarCurso } = useApp();
   const [editando, setEditando] = useState(false);
   const [expandido, setExpandido] = useState(false);
   const numPreguntas = c.quiz?.length ?? 0;
+
+  const handleEliminar = () => {
+    if (window.confirm(`¿Eliminar el curso "${c.nombre}"? Esta acción no se puede deshacer.`)) {
+      eliminarCurso(c.id);
+    }
+  };
 
   if (editando) {
     return (
@@ -689,6 +695,9 @@ function CursoConBanco({ curso: c }: { curso: Curso }) {
         </button>
         <button className="btn btn-outline btn-sm" onClick={() => setExpandido((v) => !v)}>
           {expandido ? 'Ocultar preguntas' : 'Gestionar preguntas'}
+        </button>
+        <button className="btn btn-outline btn-sm" style={{ color: '#c0392b', borderColor: '#c0392b' }} onClick={handleEliminar}>
+          Eliminar
         </button>
       </div>
 

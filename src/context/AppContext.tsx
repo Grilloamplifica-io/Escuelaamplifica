@@ -25,6 +25,7 @@ interface AppContextValue {
   cursos: Curso[];
   addCurso: (input: NuevoCursoInput) => Curso;
   editarCurso: (id: string, cambios: NuevoCursoInput) => void;
+  eliminarCurso: (id: string) => void;
   addPreguntaACurso: (cursoId: string, pregunta: QuizPregunta) => void;
   device: Device;
   toggleDevice: () => void;
@@ -166,6 +167,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     editarCurso: (id, cambios) => {
       setCursos((prev) => prev.map((c) => (c.id === id ? { ...c, ...cambios } : c)));
+    },
+    eliminarCurso: (id) => {
+      setCursos((prev) => prev.filter((c) => c.id !== id));
+      // Limpia toda referencia al curso eliminado para no dejar datos huérfanos
+      // que hagan fallar páginas que asumen que todo curso en `asign`/`cert` existe.
+      setUsers((prev) =>
+        Object.fromEntries(
+          Object.entries(prev).map(([userId, u]) => {
+            const { [id]: _asign, ...asign } = u.asign;
+            const { [id]: _progreso, ...progreso } = u.progreso;
+            return [
+              userId,
+              { ...u, asign, progreso, cert: u.cert.filter((c) => c.cursoId !== id) },
+            ];
+          }),
+        ),
+      );
     },
     addPreguntaACurso: (cursoId, pregunta) => {
       setCursos((prev) =>
