@@ -859,7 +859,7 @@ function UsuarioConCursos({ usuario: u }: { usuario: Usuario }) {
 }
 
 function CursosDeUsuario({ usuario: u }: { usuario: Usuario }) {
-  const { cursos, asignarCursoAUsuario, reiniciarCursoDeUsuario } = useApp();
+  const { cursos, asignarCursoAUsuario, quitarCursoDeUsuario, reiniciarCursoDeUsuario } = useApp();
   const asignados = cursos.filter((c) => u.asign[c.id]);
   const disponibles = cursos.filter((c) => !u.asign[c.id]);
 
@@ -868,6 +868,13 @@ function CursosDeUsuario({ usuario: u }: { usuario: Usuario }) {
       `¿Reiniciar "${c.nombre}" para ${u.nombre}? Vuelve a quedar pendiente, se borra su avance y el certificado obtenido (si tenía).`,
     );
     if (confirmado) reiniciarCursoDeUsuario(u.id, c.id);
+  };
+
+  const quitar = (c: Curso) => {
+    const confirmado = window.confirm(
+      `¿Quitar "${c.nombre}" a ${u.nombre}? Deja de estar asignado y se borra su avance y el certificado obtenido (si tenía).`,
+    );
+    if (confirmado) quitarCursoDeUsuario(u.id, c.id);
   };
 
   return (
@@ -881,6 +888,9 @@ function CursosDeUsuario({ usuario: u }: { usuario: Usuario }) {
               <BadgeEstado estado={u.asign[c.id]} />
               <button className="btn btn-outline btn-sm" onClick={() => reiniciar(c)}>
                 Reiniciar
+              </button>
+              <button className="btn btn-outline btn-sm" style={{ color: '#c0392b', borderColor: '#c0392b' }} onClick={() => quitar(c)}>
+                Quitar
               </button>
             </div>
           </div>
