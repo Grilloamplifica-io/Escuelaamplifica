@@ -1,9 +1,16 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
 import type { Certificado, CertificadoExterno, Curso, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, Usuario } from '../types';
 import { generarCodigoCertificado, formatearFechaCorta } from '../utils/certificado';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 import { clearState, loadState, saveState } from '../utils/storage';
+import { cargarRemoto, guardarRemoto } from '../utils/remoteStorage';
+
+interface EstadoCompartido {
+  users: Record<string, Usuario>;
+  cursos: Curso[];
+  reglas: Regla[];
+}
 
 type Device = 'desktop' | 'mobile';
 
@@ -58,11 +65,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadState('currentUserId', null));
   const [device, setDevice] = useState<Device>('desktop');
   const [simMode, setSimMode] = useState(false);
+  const hidratadoRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => saveState('users', users), [users]);
   useEffect(() => saveState('cursos', cursos), [cursos]);
   useEffect(() => saveState('reglas', reglas), [reglas]);
   useEffect(() => saveState('currentUserId', currentUserId), [currentUserId]);
+
+  // Sincronización con Firebase: al montar, si ya hay datos compartidos en la
+  // Realtime Database los adoptamos (fuente de verdad entre dispositivos);
+  // si la base está vacía, subimos el estado local/semilla para inicializarla.
+  useEffect(() => {
+    (async () => {
+      const remoto = await cargarRemoto<EstadoCompartido>();
+      if (remoto && remoto.users && Object.keys(remoto.users).length > 0) {
+        setUsers(normalizarUsuarios(remoto.users));
+        setCursos(remoto.cursos ?? CURSOS);
+        setReglas(remoto.reglas ?? REGLAS);
+      } else {
+        await guardarRemoto({ users, cursos, reglas } satisfies EstadoCompartido);
+      }
+      hidratadoRef.current = true;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    })();
+  }, []);
+
+  // Cada cambio a datos compartidos se sube a Firebase (con debounce), una vez
+  // que terminó la sincronización inicial, para no pisar la base con la
+  // semilla local antes de saber qué había guardado remotamente.
+  useEffect(() => {
+    if (!hidratadoRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      guardarRemoto({ users, cursos, reglas } satisfies EstadoCompartido);
+    }, 800);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [users, cursos, reglas]);
 
   const value = useMemo<AppContextValue>(() => ({
     currentUserId,
