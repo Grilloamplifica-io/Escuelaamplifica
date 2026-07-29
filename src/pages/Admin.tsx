@@ -1192,15 +1192,44 @@ function CursoCamposForm({
                 }
               />
               {m.tipo === 'video' && (
-                <input
-                  type="number"
-                  min={1}
-                  style={{ width: 140, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
-                  value={m.duracionMinutos ?? ''}
-                  onChange={(e) => updateModulo(i, { duracionMinutos: e.target.value ? Number(e.target.value) : undefined })}
-                  placeholder="Duración (min)"
-                  title="Duración del video en minutos: la persona debe esperar al menos ese tiempo antes de poder continuar (para links de Drive u otros donde no se puede detectar automáticamente que el video terminó)."
-                />
+                <div
+                  style={{ display: 'flex', gap: 4, alignItems: 'center' }}
+                  title="Duración del video: la persona debe esperar al menos ese tiempo antes de poder continuar (para links de Drive u otros donde no se puede detectar automáticamente que el video terminó)."
+                >
+                  <input
+                    type="number"
+                    min={0}
+                    style={{ width: 62, padding: '9px 8px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
+                    value={m.duracionSegundos !== undefined ? Math.floor(m.duracionSegundos / 60) : ''}
+                    onChange={(e) => {
+                      const min = e.target.value ? Number(e.target.value) : 0;
+                      const seg = (m.duracionSegundos ?? 0) % 60;
+                      const total = min * 60 + seg;
+                      updateModulo(i, { duracionSegundos: total > 0 ? total : undefined });
+                    }}
+                    placeholder="Min"
+                  />
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    min
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={59}
+                    style={{ width: 62, padding: '9px 8px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13, fontFamily: 'inherit' }}
+                    value={m.duracionSegundos !== undefined ? m.duracionSegundos % 60 : ''}
+                    onChange={(e) => {
+                      const seg = e.target.value ? Number(e.target.value) : 0;
+                      const min = Math.floor((m.duracionSegundos ?? 0) / 60);
+                      const total = min * 60 + seg;
+                      updateModulo(i, { duracionSegundos: total > 0 ? total : undefined });
+                    }}
+                    placeholder="Seg"
+                  />
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    seg
+                  </span>
+                </div>
               )}
             </div>
           )}

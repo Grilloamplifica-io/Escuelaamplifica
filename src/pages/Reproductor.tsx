@@ -88,7 +88,7 @@ export function Reproductor() {
 
     // Drive u otro link no verificable, o modo simulado sin link: gate por tiempo mínimo,
     // usando la duración real del video si el admin la cargó (o un mínimo por defecto si no).
-    const minimo = m.duracionMinutos && m.duracionMinutos > 0 ? m.duracionMinutos * 60 : SEGUNDOS_MINIMOS_VIDEO_SIMULADO;
+    const minimo = m.duracionSegundos && m.duracionSegundos > 0 ? m.duracionSegundos : SEGUNDOS_MINIMOS_VIDEO_SIMULADO;
     setSegundosRestantes(minimo);
     const interval = setInterval(() => {
       setSegundosRestantes((s) => {
@@ -102,7 +102,7 @@ export function Reproductor() {
     }, 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, m.tipo, m.archivoUrl, m.duracionMinutos]);
+  }, [idx, m.tipo, m.archivoUrl, m.duracionSegundos]);
 
   const puedeAvanzar = m.tipo !== 'video' || videoListo;
 
