@@ -1016,6 +1016,11 @@ function CursoConBanco({ curso: c }: { curso: Curso }) {
           }}
           onCancel={() => setEditando(false)}
         />
+        <div className="divider" style={{ marginTop: 20 }} />
+        <div className="eyebrow" style={{ marginBottom: 12 }}>
+          Evaluación del curso (banco de preguntas)
+        </div>
+        <BancoPreguntasCurso curso={c} />
       </div>
     );
   }
@@ -1226,10 +1231,48 @@ function CursoCamposForm({
 
 const PREGUNTA_FORM_INICIAL = { q: '', ops: ['', ''], correcta: 0, feedback: '' };
 
+const PREGUNTAS_DEMO: QuizPregunta[] = [
+  {
+    q: '(Demo) ¿Cuál de estas alternativas describe mejor el objetivo de este curso?',
+    ops: ['Alternativa correcta de ejemplo', 'Alternativa incorrecta 1', 'Alternativa incorrecta 2'],
+    correcta: 0,
+    feedback: 'Esta es una pregunta de ejemplo — reemplázala por preguntas reales del curso antes de publicarlo.',
+  },
+  {
+    q: '(Demo) ¿Qué se recomienda hacer ante la situación planteada en el módulo?',
+    ops: ['La opción correcta de ejemplo', 'Una opción distractora', 'Otra opción distractora'],
+    correcta: 0,
+    feedback: 'Pregunta de ejemplo para probar el flujo de evaluación mientras cargas el contenido real.',
+  },
+  {
+    q: '(Demo) Según lo visto en el curso, ¿cuál de las siguientes es verdadera?',
+    ops: ['Afirmación correcta de ejemplo', 'Afirmación falsa 1', 'Afirmación falsa 2', 'Afirmación falsa 3'],
+    correcta: 0,
+    feedback: 'Reemplaza este set de preguntas demo por el contenido definitivo antes de asignar el curso a personas reales.',
+  },
+  {
+    q: '(Demo) ¿Cuál de estas acciones NO corresponde según el curso?',
+    ops: ['Acción correcta de ejemplo', 'Acción incorrecta (respuesta correcta)', 'Otra acción correcta'],
+    correcta: 1,
+    feedback: 'Pregunta de ejemplo — esta alternativa es la que no corresponde.',
+  },
+  {
+    q: '(Demo) ¿Cuál es el paso final recomendado?',
+    ops: ['Paso final correcto de ejemplo', 'Paso incorrecto 1', 'Paso incorrecto 2'],
+    correcta: 0,
+    feedback: 'Última pregunta demo del set — puedes eliminarlas todas una vez que cargues las preguntas reales.',
+  },
+];
+
 function BancoPreguntasCurso({ curso: c }: { curso: Curso }) {
   const { addPreguntaACurso } = useApp();
   const [form, setForm] = useState(PREGUNTA_FORM_INICIAL);
   const banco = c.quiz ?? [];
+  const faltanDemo = PREGUNTAS_DEMO.filter((demo) => !banco.some((p) => p.q === demo.q));
+
+  const cargarDemo = () => {
+    faltanDemo.forEach((pregunta) => addPreguntaACurso(c.id, pregunta));
+  };
 
   const updateOpcion = (idx: number, valor: string) => {
     setForm((f) => ({ ...f, ops: f.ops.map((op, i) => (i === idx ? valor : op)) }));
@@ -1262,7 +1305,17 @@ function BancoPreguntasCurso({ curso: c }: { curso: Curso }) {
             Faltan {PREGUNTAS_MINIMAS - banco.length} para el mínimo recomendado
           </span>
         )}
+        {faltanDemo.length > 0 && (
+          <button type="button" className="btn btn-outline btn-sm" onClick={cargarDemo}>
+            + Cargar {faltanDemo.length} pregunta{faltanDemo.length === 1 ? '' : 's'} de ejemplo (demo)
+          </button>
+        )}
       </div>
+      {faltanDemo.length > 0 && (
+        <div className="muted" style={{ fontSize: 12, marginTop: -8, marginBottom: 16 }}>
+          Útil para probar la evaluación mientras cargas el contenido real — luego puedes reemplazarlas.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="field" style={{ marginBottom: 12 }}>
