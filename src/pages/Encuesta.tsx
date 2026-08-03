@@ -8,18 +8,17 @@ export function Encuesta() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const me = useCurrentUser();
-  const { responderEncuesta } = useApp();
+  const { aprobarCurso, responderEncuesta, configEncuesta } = useApp();
   const c = useCurso(id);
   const [puntaje, setPuntaje] = useState(0);
   const [recomendaria, setRecomendaria] = useState<boolean | null>(null);
   const [comentario, setComentario] = useState('');
   const [enviado, setEnviado] = useState(false);
 
-  const irAlCertificado = () => navigate(`/certificado/${c.id}`);
-
   const handleSubmit = () => {
     if (!puntaje || recomendaria === null) return;
     responderEncuesta(me.id, c.id, { puntaje, recomendaria, comentario: comentario.trim() || undefined });
+    aprobarCurso(me.id, c.id);
     setEnviado(true);
   };
 
@@ -32,7 +31,7 @@ export function Encuesta() {
           <div className="muted" style={{ fontSize: 13, marginBottom: 18 }}>
             Nos ayuda a mejorar los próximos cursos.
           </div>
-          <button className="btn btn-accent" onClick={irAlCertificado}>
+          <button className="btn btn-accent" onClick={() => navigate(`/certificado/${c.id}`)}>
             Ver mi certificado →
           </button>
         </div>
@@ -47,12 +46,12 @@ export function Encuesta() {
         ¿Cómo te fue con este curso?
       </h1>
       <div className="muted" style={{ fontSize: 12.5, marginBottom: 20 }}>
-        Es rápido y anónimo para tu líder — solo se usa para mejorar el contenido.
+        Responde estas preguntas para obtener tu certificado — toma menos de un minuto.
       </div>
 
       <div className="card" style={{ textAlign: 'left', marginBottom: 16 }}>
         <div className="eyebrow" style={{ marginBottom: 10 }}>
-          ¿Qué tan satisfecho quedaste con el curso?
+          {configEncuesta.preguntaSatisfaccion}
         </div>
         <div style={{ display: 'flex', gap: 8, fontSize: 28 }}>
           {ESTRELLAS.map((n) => (
@@ -69,7 +68,7 @@ export function Encuesta() {
 
       <div className="card" style={{ textAlign: 'left', marginBottom: 16 }}>
         <div className="eyebrow" style={{ marginBottom: 10 }}>
-          ¿Recomendarías este curso a un colega?
+          {configEncuesta.preguntaRecomendacion}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -98,18 +97,18 @@ export function Encuesta() {
           style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
-          placeholder="¿Algo que quieras contarnos sobre el curso?"
+          placeholder={configEncuesta.preguntaComentario}
         />
       </div>
 
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
-        <button className="btn btn-outline" onClick={irAlCertificado}>
-          Omitir por ahora
-        </button>
-        <button className="btn btn-primary" disabled={!puntaje || recomendaria === null} onClick={handleSubmit}>
-          Enviar y ver certificado →
-        </button>
-      </div>
+      <button className="btn btn-primary" style={{ width: '100%' }} disabled={!puntaje || recomendaria === null} onClick={handleSubmit}>
+        Enviar y ver certificado →
+      </button>
+      {(!puntaje || recomendaria === null) && (
+        <div className="muted" style={{ fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+          Responde ambas preguntas para poder continuar.
+        </div>
+      )}
     </div>
   );
 }

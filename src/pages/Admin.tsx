@@ -16,7 +16,7 @@ function normalizarTexto(valor: string): string {
   return valor.toLowerCase().normalize('NFD').replace(DIACRITICOS_ADMIN, '');
 }
 
-type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos' | 'ranking' | 'cumplimiento';
+type Tab = 'reglas' | 'escuelas' | 'usuarios' | 'cursos' | 'ranking' | 'cumplimiento' | 'encuesta';
 
 export function Admin() {
   const { resetDemo } = useApp();
@@ -55,6 +55,9 @@ export function Admin() {
         <div className={`tab${tab === 'cumplimiento' ? ' active' : ''}`} onClick={() => setTab('cumplimiento')}>
           Cumplimiento por curso
         </div>
+        <div className={`tab${tab === 'encuesta' ? ' active' : ''}`} onClick={() => setTab('encuesta')}>
+          Encuesta de satisfacción
+        </div>
       </div>
       {tab === 'reglas' && (
         <>
@@ -67,6 +70,72 @@ export function Admin() {
       {tab === 'cursos' && <AdminCursos />}
       {tab === 'ranking' && <AdminRanking />}
       {tab === 'cumplimiento' && <AdminCumplimientoCursos />}
+      {tab === 'encuesta' && <AdminEncuesta />}
+    </div>
+  );
+}
+
+function AdminEncuesta() {
+  const { configEncuesta, actualizarConfigEncuesta } = useApp();
+  const [form, setForm] = useState(configEncuesta);
+  const [guardado, setGuardado] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!form.preguntaSatisfaccion.trim() || !form.preguntaRecomendacion.trim() || !form.preguntaComentario.trim()) return;
+    actualizarConfigEncuesta({
+      preguntaSatisfaccion: form.preguntaSatisfaccion.trim(),
+      preguntaRecomendacion: form.preguntaRecomendacion.trim(),
+      preguntaComentario: form.preguntaComentario.trim(),
+    });
+    setGuardado(true);
+    setTimeout(() => setGuardado(false), 2500);
+  };
+
+  return (
+    <div className="card">
+      <div className="eyebrow" style={{ marginBottom: 4 }}>
+        Encuesta de satisfacción
+      </div>
+      <div className="muted" style={{ fontSize: 12.5, marginBottom: 16 }}>
+        Esta encuesta es obligatoria para obtener el certificado al terminar cualquier curso. Edita aquí el texto de
+        las preguntas — aplica a todos los cursos por igual.
+      </div>
+      <form onSubmit={handleSubmit}>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="encuesta-satisfaccion">Pregunta de satisfacción (estrellas)</label>
+          <input
+            id="encuesta-satisfaccion"
+            required
+            value={form.preguntaSatisfaccion}
+            onChange={(e) => setForm((f) => ({ ...f, preguntaSatisfaccion: e.target.value }))}
+          />
+        </div>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label htmlFor="encuesta-recomendacion">Pregunta de recomendación (Sí/No)</label>
+          <input
+            id="encuesta-recomendacion"
+            required
+            value={form.preguntaRecomendacion}
+            onChange={(e) => setForm((f) => ({ ...f, preguntaRecomendacion: e.target.value }))}
+          />
+        </div>
+        <div className="field" style={{ marginBottom: 16 }}>
+          <label htmlFor="encuesta-comentario">Texto del comentario (opcional para la persona)</label>
+          <input
+            id="encuesta-comentario"
+            required
+            value={form.preguntaComentario}
+            onChange={(e) => setForm((f) => ({ ...f, preguntaComentario: e.target.value }))}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button className="btn btn-accent" type="submit">
+            Guardar cambios
+          </button>
+          {guardado && <span style={{ color: 'var(--success)', fontSize: 13 }}>✓ Guardado</span>}
+        </div>
+      </form>
     </div>
   );
 }

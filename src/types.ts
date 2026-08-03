@@ -84,6 +84,12 @@ export interface NuevaEncuestaInput {
   comentario?: string;
 }
 
+export interface ConfigEncuesta {
+  preguntaSatisfaccion: string;
+  preguntaRecomendacion: string;
+  preguntaComentario: string;
+}
+
 export interface Usuario {
   id: string;
   nombre: string;

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
-import type { Certificado, CertificadoExterno, Curso, EncuestaSatisfaccion, NuevaEncuestaInput, NuevaReglaCargoInput, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, ReglaCargo, Usuario } from '../types';
+import type { Certificado, CertificadoExterno, ConfigEncuesta, Curso, EncuestaSatisfaccion, NuevaEncuestaInput, NuevaReglaCargoInput, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, ReglaCargo, Usuario } from '../types';
 import { generarCodigoCertificado, formatearFechaCorta } from '../utils/certificado';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 import { clearState, loadState, saveState } from '../utils/storage';
@@ -11,7 +11,14 @@ interface EstadoCompartido {
   cursos: Curso[];
   reglas: Regla[];
   reglasCargo: ReglaCargo[];
+  configEncuesta?: ConfigEncuesta;
 }
+
+const CONFIG_ENCUESTA_DEFAULT: ConfigEncuesta = {
+  preguntaSatisfaccion: '¿Qué tan satisfecho quedaste con el curso?',
+  preguntaRecomendacion: '¿Recomendarías este curso a un colega?',
+  preguntaComentario: '¿Algo que quieras contarnos sobre el curso?',
+};
 
 type Device = 'desktop' | 'mobile';
 
@@ -37,6 +44,8 @@ interface AppContextValue {
   reglasCargo: ReglaCargo[];
   addReglaCargo: (input: NuevaReglaCargoInput) => ReglaCargo;
   eliminarReglaCargo: (id: string) => void;
+  configEncuesta: ConfigEncuesta;
+  actualizarConfigEncuesta: (input: ConfigEncuesta) => void;
   cursos: Curso[];
   addCurso: (input: NuevoCursoInput) => Curso;
   editarCurso: (id: string, cambios: NuevoCursoInput) => void;
@@ -89,6 +98,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [cursos, setCursos] = useState<Curso[]>(() => loadState('cursos', CURSOS));
   const [reglas, setReglas] = useState<Regla[]>(() => loadState('reglas', REGLAS));
   const [reglasCargo, setReglasCargo] = useState<ReglaCargo[]>(() => loadState('reglasCargo', []));
+  const [configEncuesta, setConfigEncuesta] = useState<ConfigEncuesta>(() =>
+    loadState('configEncuesta', CONFIG_ENCUESTA_DEFAULT),
+  );
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => loadState('currentUserId', null));
   const [device, setDevice] = useState<Device>('desktop');
   const [simMode, setSimMode] = useState(false);
@@ -100,6 +112,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => saveState('cursos', cursos), [cursos]);
   useEffect(() => saveState('reglas', reglas), [reglas]);
   useEffect(() => saveState('reglasCargo', reglasCargo), [reglasCargo]);
+  useEffect(() => saveState('configEncuesta', configEncuesta), [configEncuesta]);
   useEffect(() => saveState('currentUserId', currentUserId), [currentUserId]);
 
   // Sincronización con Firebase: al montar, si ya hay datos compartidos en la
@@ -113,8 +126,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCursos(remoto.cursos ?? CURSOS);
         setReglas(remoto.reglas ?? REGLAS);
         setReglasCargo(remoto.reglasCargo ?? []);
+        setConfigEncuesta(remoto.configEncuesta ?? CONFIG_ENCUESTA_DEFAULT);
       } else {
-        await guardarRemoto({ users, cursos, reglas, reglasCargo } satisfies EstadoCompartido);
+        await guardarRemoto({ users, cursos, reglas, reglasCargo, configEncuesta } satisfies EstadoCompartido);
       }
       hidratadoRef.current = true;
       setSincronizando(false);
@@ -129,12 +143,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!hidratadoRef.current) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      guardarRemoto({ users, cursos, reglas, reglasCargo } satisfies EstadoCompartido);
+      guardarRemoto({ users, cursos, reglas, reglasCargo, configEncuesta } satisfies EstadoCompartido);
     }, 800);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [users, cursos, reglas, reglasCargo]);
+  }, [users, cursos, reglas, reglasCargo, configEncuesta]);
 
   const value = useMemo<AppContextValue>(() => ({
     currentUserId,
@@ -313,6 +327,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     eliminarReglaCargo: (id) => {
       setReglasCargo((prev) => prev.filter((r) => r.id !== id));
     },
+    configEncuesta,
+    actualizarConfigEncuesta: (input) => setConfigEncuesta(input),
     cursos,
     addCurso: (input) => {
       const id = nuevoId();
@@ -350,15 +366,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     simMode,
     toggleSimMode: () => setSimMode((s) => !s),
     resetDemo: () => {
-      clearState(['users', 'cursos', 'reglas', 'reglasCargo', 'currentUserId']);
+      clearState(['users', 'cursos', 'reglas', 'reglasCargo', 'configEncuesta', 'currentUserId']);
       setUsers(USERS);
       setCursos(CURSOS);
       setReglas(REGLAS);
       setReglasCargo([]);
+      setConfigEncuesta(CONFIG_ENCUESTA_DEFAULT);
       setCurrentUserId(null);
     },
     sincronizando,
-  }), [currentUserId, users, cursos, reglas, reglasCargo, device, simMode, sincronizando]);
+  }), [currentUserId, users, cursos, reglas, reglasCargo, configEncuesta, device, simMode, sincronizando]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

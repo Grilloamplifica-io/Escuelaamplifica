@@ -17,7 +17,7 @@ export function Reproductor() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const me = useCurrentUser();
-  const { aprobarCurso, actualizarProgresoCurso } = useApp();
+  const { actualizarProgresoCurso } = useApp();
   const c = useCurso(id);
   const [moduloIdx, setModuloIdx] = useState(0);
   const [checklistDone, setChecklistDone] = useState<Record<number, boolean>>({});
@@ -256,10 +256,7 @@ export function Reproductor() {
                 <button
                   className="btn btn-accent"
                   disabled={!puedeAvanzar}
-                  onClick={() => {
-                    aprobarCurso(me.id, c.id);
-                    navigate(`/encuesta/${c.id}`);
-                  }}
+                  onClick={() => navigate(`/encuesta/${c.id}`)}
                 >
                   Marcar completado →
                 </button>

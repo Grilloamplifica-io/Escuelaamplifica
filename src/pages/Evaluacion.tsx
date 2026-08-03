@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { escuela } from '../data/mockData';
-import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
+import { useCurso } from '../context/AppContext';
 import { muestraAleatoria } from '../utils/random';
 import type { QuizPregunta } from '../types';
 
@@ -10,8 +10,6 @@ const PREGUNTAS_POR_INTENTO = 5;
 export function Evaluacion() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const me = useCurrentUser();
-  const { aprobarCurso } = useApp();
   const c = useCurso(id);
   const banco = c.quiz ?? [];
   const [preguntas, setPreguntas] = useState<QuizPregunta[]>(() => muestraAleatoria(banco, PREGUNTAS_POR_INTENTO));
@@ -37,11 +35,6 @@ export function Evaluacion() {
   }
   const scorePct = submitted && preguntas.length ? Math.round((correctCount / preguntas.length) * 100) : null;
   const aprobado = scorePct !== null && scorePct >= 80;
-
-  useEffect(() => {
-    if (aprobado) aprobarCurso(me.id, c.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aprobado]);
 
   if (banco.length === 0) {
     return <div className="empty">Este curso no tiene evaluación configurada en el prototipo.</div>;
