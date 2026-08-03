@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
 import { iconFor } from '../components/ui';
-import { esArchivoDeVideoDirecto, idDeYoutube, urlEmbebida } from '../utils/embedUrl';
+import { esArchivoDeVideoDirecto, esYoutubeShorts, idDeYoutube, urlEmbebida } from '../utils/embedUrl';
 
 const SEGUNDOS_MINIMOS_VIDEO_SIMULADO = 60;
 
@@ -39,7 +39,9 @@ export function Reproductor() {
   const idx = Math.min(moduloIdx, c.modulos.length - 1);
   const m = c.modulos[idx];
   const isLast = idx === c.modulos.length - 1;
-  const ytId = m.tipo === 'video' && m.archivoUrl ? idDeYoutube(m.archivoUrl) : null;
+  // Los Shorts no son confiables para detectar el fin real del video (ver esYoutubeShorts),
+  // así que se tratan como un link "no verificable" con gate por tiempo, no por evento real.
+  const ytId = m.tipo === 'video' && m.archivoUrl && !esYoutubeShorts(m.archivoUrl) ? idDeYoutube(m.archivoUrl) : null;
   const esVideoDirecto = m.tipo === 'video' && !!m.archivoUrl && esArchivoDeVideoDirecto(m.archivoUrl);
 
   const goToModulo = (next: number) => {

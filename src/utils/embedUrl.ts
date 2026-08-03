@@ -32,3 +32,10 @@ export function urlEmbebida(url: string): string {
 export function esArchivoDeVideoDirecto(url: string): boolean {
   return /\.(mp4|webm|ogg)(\?.*)?$/i.test(url) && !idDeYoutube(url) && !idDeDrive(url);
 }
+
+// Los Shorts frecuentemente no notifican bien el evento "video terminado" al reproductor
+// embebido (o directamente rechazan reproducirse incrustados), así que no podemos confiar
+// en la IFrame Player API para detectar que se vieron completos — se gatean por tiempo.
+export function esYoutubeShorts(url: string): boolean {
+  return /youtube\.com\/shorts\//.test(url);
+}
