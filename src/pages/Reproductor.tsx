@@ -256,7 +256,7 @@ export function Reproductor() {
                   disabled={!puedeAvanzar}
                   onClick={() => {
                     aprobarCurso(me.id, c.id);
-                    navigate(`/certificado/${c.id}`);
+                    navigate(`/encuesta/${c.id}`);
                   }}
                 >
                   Marcar completado →

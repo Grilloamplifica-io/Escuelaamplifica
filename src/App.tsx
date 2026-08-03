@@ -8,6 +8,7 @@ import { Catalogo } from './pages/Catalogo';
 import { CursoPage } from './pages/Curso';
 import { Reproductor } from './pages/Reproductor';
 import { Evaluacion } from './pages/Evaluacion';
+import { Encuesta } from './pages/Encuesta';
 import { Certificado } from './pages/Certificado';
 import { Perfil } from './pages/Perfil';
 import { Equipo } from './pages/Equipo';
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/curso/:id" element={<CursoPage />} />
             <Route path="/reproductor/:id" element={<Reproductor />} />
             <Route path="/evaluacion/:id" element={<Evaluacion />} />
+            <Route path="/encuesta/:id" element={<Encuesta />} />
             <Route path="/certificado/:id" element={<Certificado />} />
             <Route path="/perfil" element={<Perfil />} />
             <Route path="/equipo" element={<Equipo />} />

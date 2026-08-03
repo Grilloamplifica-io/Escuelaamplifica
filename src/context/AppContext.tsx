@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CURSOS, REGLAS, USERS } from '../data/mockData';
-import type { Certificado, CertificadoExterno, Curso, NuevaReglaCargoInput, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, ReglaCargo, Usuario } from '../types';
+import type { Certificado, CertificadoExterno, Curso, EncuestaSatisfaccion, NuevaEncuestaInput, NuevaReglaCargoInput, NuevaReglaInput, NuevoCertificadoExternoInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Regla, ReglaCargo, Usuario } from '../types';
 import { generarCodigoCertificado, formatearFechaCorta } from '../utils/certificado';
 import { claveInicialDeRut, mismoRut, soloDigitosRut } from '../utils/rut';
 import { clearState, loadState, saveState } from '../utils/storage';
@@ -30,6 +30,7 @@ interface AppContextValue {
   actualizarProgresoCurso: (userId: string, cursoId: string, moduloIdx: number, totalModulos: number) => void;
   aprobarCurso: (userId: string, cursoId: string) => Certificado;
   addCertificadoExterno: (userId: string, input: NuevoCertificadoExternoInput) => CertificadoExterno;
+  responderEncuesta: (userId: string, cursoId: string, input: NuevaEncuestaInput) => EncuestaSatisfaccion;
   eliminarCertificadoExterno: (userId: string, certId: string) => void;
   reglas: Regla[];
   addRegla: (input: NuevaReglaInput) => Regla;
@@ -69,6 +70,7 @@ function normalizarUsuarios(users: Record<string, Usuario>): Record<string, Usua
           certificadosExternos: [],
           cert: [],
           progreso: {},
+          encuestas: [],
           ...crudo,
         } as Usuario,
       ];
@@ -173,6 +175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         progreso: {},
         cert: [],
         certificadosExternos: [],
+        encuestas: [],
       };
       setUsers((prev) => ({ ...prev, [id]: nuevo }));
       return nuevo;
@@ -250,6 +253,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
       return certificado;
+    },
+    responderEncuesta: (userId, cursoId, input) => {
+      const nueva: EncuestaSatisfaccion = { cursoId, ...input, fecha: formatearFechaCorta(new Date()) };
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u) return prev;
+        return {
+          ...prev,
+          [userId]: { ...u, encuestas: [...u.encuestas.filter((e) => e.cursoId !== cursoId), nueva] },
+        };
+      });
+      return nueva;
     },
     addCertificadoExterno: (userId, input) => {
       const nuevo: CertificadoExterno = { id: nuevoId(), ...input };

@@ -11,6 +11,7 @@ function titleForPath(pathname: string): string {
   if (pathname.startsWith('/curso/')) return 'Curso';
   if (pathname.startsWith('/reproductor/')) return 'Reproductor';
   if (pathname.startsWith('/evaluacion/')) return 'Evaluación';
+  if (pathname.startsWith('/encuesta/')) return 'Encuesta de satisfacción';
   if (pathname.startsWith('/certificado/')) return 'Certificado';
   if (pathname.startsWith('/perfil')) return 'Mi perfil';
   if (pathname.startsWith('/equipo')) return 'Dashboard de equipo';

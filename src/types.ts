@@ -70,6 +70,20 @@ export interface NuevoCertificadoExternoInput {
   archivoDataUrl?: string;
 }
 
+export interface EncuestaSatisfaccion {
+  cursoId: string;
+  puntaje: number;
+  recomendaria: boolean;
+  comentario?: string;
+  fecha: string;
+}
+
+export interface NuevaEncuestaInput {
+  puntaje: number;
+  recomendaria: boolean;
+  comentario?: string;
+}
+
 export interface Usuario {
   id: string;
   nombre: string;
@@ -83,6 +97,7 @@ export interface Usuario {
   progreso: Record<string, number>;
   cert: Certificado[];
   certificadosExternos: CertificadoExterno[];
+  encuestas: EncuestaSatisfaccion[];
 }
 
 export interface NuevoUsuarioInput {

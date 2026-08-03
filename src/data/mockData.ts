@@ -164,6 +164,7 @@ export const USERS: Record<string, Usuario> = {
     progreso: { c5: 60 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-9K2L-0091', fecha: '12 may 2026' }, { cursoId: 'c6', codigo: 'AMP-7T4Q-0142', fecha: '02 jun 2026' }],
     certificadosExternos: [],
+    encuestas: [],
   },
   u2: {
     id: 'u2', nombre: 'Luis Paredes', cargo: 'Operario de Bodega', rol: 'colaborador', contexto: 'bodega', escuela: 'ope', color: '#57708C',
@@ -174,6 +175,7 @@ export const USERS: Record<string, Usuario> = {
     certificadosExternos: [
       { id: 'ext-1', nombre: 'Manejo Manual de Carga', institucion: 'Mutual de Seguridad CChC', fecha: '15 mar 2026', codigo: 'MUT-2026-4471' },
     ],
+    encuestas: [],
   },
   u3: {
     id: 'u3', nombre: 'Daniela Vidal', cargo: 'Jefa de Sucursal', rol: 'lider', contexto: 'oficina', escuela: 'ope', color: '#C99A2E',
@@ -182,6 +184,7 @@ export const USERS: Record<string, Usuario> = {
     progreso: { c7: 20 },
     cert: [{ cursoId: 'c1', codigo: 'AMP-5H1C-0032', fecha: '28 abr 2026' }],
     certificadosExternos: [],
+    encuestas: [],
   },
   u4: {
     id: 'u4', nombre: 'Rosangel Rincón', cargo: 'People Partner', rol: 'people', contexto: 'oficina', escuela: 'per', color: '#7C5CBF',
@@ -190,6 +193,7 @@ export const USERS: Record<string, Usuario> = {
     progreso: {},
     cert: [],
     certificadosExternos: [],
+    encuestas: [],
   },
   // Usuario maestro: siempre existe en cualquier instalación nueva (demo, GitHub Pages, etc.)
   // aunque todavía no se haya hecho la carga masiva de empleados reales, para no dejar
@@ -201,6 +205,7 @@ export const USERS: Record<string, Usuario> = {
     progreso: {},
     cert: [],
     certificadosExternos: [],
+    encuestas: [],
   },
 };
 

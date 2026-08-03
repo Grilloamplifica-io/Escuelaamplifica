@@ -111,8 +111,8 @@ export function Evaluacion() {
             Puntaje mínimo de aprobación: 80%
           </div>
           {aprobado ? (
-            <button className="btn btn-accent" onClick={() => navigate(`/certificado/${c.id}`)}>
-              Ver mi certificado →
+            <button className="btn btn-accent" onClick={() => navigate(`/encuesta/${c.id}`)}>
+              Continuar →
             </button>
           ) : (
             <button className="btn btn-outline" onClick={nuevoIntento}>
