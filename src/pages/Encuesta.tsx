@@ -1,8 +1,59 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp, useCurrentUser, useCurso } from '../context/AppContext';
+import type { PreguntaEncuesta, TipoRespuesta } from '../types';
 
 const ESTRELLAS = [1, 2, 3, 4, 5];
+
+function PreguntaCampo({
+  pregunta,
+  valor,
+  onChange,
+}: {
+  pregunta: PreguntaEncuesta;
+  valor: TipoRespuesta | undefined;
+  onChange: (valor: TipoRespuesta) => void;
+}) {
+  if (pregunta.tipo === 'estrellas') {
+    const puntaje = typeof valor === 'number' ? valor : 0;
+    return (
+      <div style={{ display: 'flex', gap: 8, fontSize: 28 }}>
+        {ESTRELLAS.map((n) => (
+          <span key={n} onClick={() => onChange(n)} style={{ cursor: 'pointer', color: n <= puntaje ? 'var(--amber)' : 'var(--border)' }}>
+            ★
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (pregunta.tipo === 'si_no') {
+    return (
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button type="button" className={`btn btn-sm ${valor === true ? 'btn-accent' : 'btn-outline'}`} onClick={() => onChange(true)}>
+          Sí
+        </button>
+        <button type="button" className={`btn btn-sm ${valor === false ? 'btn-accent' : 'btn-outline'}`} onClick={() => onChange(false)}>
+          No
+        </button>
+      </div>
+    );
+  }
+  return (
+    <textarea
+      rows={3}
+      style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+      value={typeof valor === 'string' ? valor : ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={pregunta.obligatoria ? undefined : 'Opcional'}
+    />
+  );
+}
+
+function respuestaValida(pregunta: PreguntaEncuesta, valor: TipoRespuesta | undefined): boolean {
+  if (!pregunta.obligatoria) return true;
+  if (pregunta.tipo === 'texto') return typeof valor === 'string' && valor.trim().length > 0;
+  return valor !== undefined && valor !== null;
+}
 
 export function Encuesta() {
   const { id = '' } = useParams();
@@ -10,14 +61,14 @@ export function Encuesta() {
   const me = useCurrentUser();
   const { aprobarCurso, responderEncuesta, configEncuesta } = useApp();
   const c = useCurso(id);
-  const [puntaje, setPuntaje] = useState(0);
-  const [recomendaria, setRecomendaria] = useState<boolean | null>(null);
-  const [comentario, setComentario] = useState('');
+  const [respuestas, setRespuestas] = useState<Record<string, TipoRespuesta>>({});
   const [enviado, setEnviado] = useState(false);
 
+  const todasValidas = configEncuesta.preguntas.every((p) => respuestaValida(p, respuestas[p.id]));
+
   const handleSubmit = () => {
-    if (!puntaje || recomendaria === null) return;
-    responderEncuesta(me.id, c.id, { puntaje, recomendaria, comentario: comentario.trim() || undefined });
+    if (!todasValidas) return;
+    responderEncuesta(me.id, c.id, { respuestas });
     aprobarCurso(me.id, c.id);
     setEnviado(true);
   };
@@ -49,64 +100,26 @@ export function Encuesta() {
         Responde estas preguntas para obtener tu certificado — toma menos de un minuto.
       </div>
 
-      <div className="card" style={{ textAlign: 'left', marginBottom: 16 }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>
-          {configEncuesta.preguntaSatisfaccion}
+      {configEncuesta.preguntas.map((p) => (
+        <div className="card" style={{ textAlign: 'left', marginBottom: 16 }} key={p.id}>
+          <div className="eyebrow" style={{ marginBottom: 10 }}>
+            {p.texto}
+            {!p.obligatoria && <span className="muted" style={{ textTransform: 'none', fontWeight: 400 }}> (opcional)</span>}
+          </div>
+          <PreguntaCampo
+            pregunta={p}
+            valor={respuestas[p.id]}
+            onChange={(valor) => setRespuestas((prev) => ({ ...prev, [p.id]: valor }))}
+          />
         </div>
-        <div style={{ display: 'flex', gap: 8, fontSize: 28 }}>
-          {ESTRELLAS.map((n) => (
-            <span
-              key={n}
-              onClick={() => setPuntaje(n)}
-              style={{ cursor: 'pointer', color: n <= puntaje ? 'var(--amber)' : 'var(--border)' }}
-            >
-              ★
-            </span>
-          ))}
-        </div>
-      </div>
+      ))}
 
-      <div className="card" style={{ textAlign: 'left', marginBottom: 16 }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>
-          {configEncuesta.preguntaRecomendacion}
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            type="button"
-            className={`btn btn-sm ${recomendaria === true ? 'btn-accent' : 'btn-outline'}`}
-            onClick={() => setRecomendaria(true)}
-          >
-            Sí
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${recomendaria === false ? 'btn-accent' : 'btn-outline'}`}
-            onClick={() => setRecomendaria(false)}
-          >
-            No
-          </button>
-        </div>
-      </div>
-
-      <div className="card" style={{ textAlign: 'left', marginBottom: 20 }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>
-          Comentario (opcional)
-        </div>
-        <textarea
-          rows={3}
-          style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
-          value={comentario}
-          onChange={(e) => setComentario(e.target.value)}
-          placeholder={configEncuesta.preguntaComentario}
-        />
-      </div>
-
-      <button className="btn btn-primary" style={{ width: '100%' }} disabled={!puntaje || recomendaria === null} onClick={handleSubmit}>
+      <button className="btn btn-primary" style={{ width: '100%' }} disabled={!todasValidas} onClick={handleSubmit}>
         Enviar y ver certificado →
       </button>
-      {(!puntaje || recomendaria === null) && (
+      {!todasValidas && (
         <div className="muted" style={{ fontSize: 12, marginTop: 8, textAlign: 'center' }}>
-          Responde ambas preguntas para poder continuar.
+          Responde las preguntas obligatorias para poder continuar.
         </div>
       )}
     </div>

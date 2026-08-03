@@ -15,9 +15,11 @@ interface EstadoCompartido {
 }
 
 const CONFIG_ENCUESTA_DEFAULT: ConfigEncuesta = {
-  preguntaSatisfaccion: '¿Qué tan satisfecho quedaste con el curso?',
-  preguntaRecomendacion: '¿Recomendarías este curso a un colega?',
-  preguntaComentario: '¿Algo que quieras contarnos sobre el curso?',
+  preguntas: [
+    { id: 'satisfaccion', texto: '¿Qué tan satisfecho quedaste con el curso?', tipo: 'estrellas', obligatoria: true },
+    { id: 'recomendacion', texto: '¿Recomendarías este curso a un colega?', tipo: 'si_no', obligatoria: true },
+    { id: 'comentario', texto: '¿Algo que quieras contarnos sobre el curso?', tipo: 'texto', obligatoria: false },
+  ],
 };
 
 type Device = 'desktop' | 'mobile';

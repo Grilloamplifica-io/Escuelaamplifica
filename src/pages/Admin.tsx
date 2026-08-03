@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 import { claveInicialDeRut, soloDigitosRut } from '../utils/rut';
 import { COLUMNAS_PLANTILLA, descargarPlantillaUsuarios, leerUsuariosDesdeArchivo, type FilaImportada } from '../utils/importUsuarios';
 import { exportarCumplimientoCursos, type FilaCumplimientoExport } from '../utils/exportCumplimiento';
-import type { Curso, CursoTipo, EstadoAsignacion, Modulo, NuevaReglaCargoInput, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, QuizPregunta, Rol, Usuario } from '../types';
+import type { Curso, CursoTipo, EstadoAsignacion, Modulo, NuevaReglaCargoInput, NuevaReglaInput, NuevoCursoInput, NuevoUsuarioInput, PreguntaEncuesta, QuizPregunta, Rol, Usuario } from '../types';
 
 const PREGUNTAS_MINIMAS = 5;
 
@@ -75,19 +75,30 @@ export function Admin() {
   );
 }
 
+const TIPO_PREGUNTA_LABEL: Record<PreguntaEncuesta['tipo'], string> = {
+  estrellas: 'Estrellas (1-5)',
+  si_no: 'Sí / No',
+  texto: 'Texto libre',
+};
+
 function AdminEncuesta() {
   const { configEncuesta, actualizarConfigEncuesta } = useApp();
-  const [form, setForm] = useState(configEncuesta);
+  const [preguntas, setPreguntas] = useState<PreguntaEncuesta[]>(configEncuesta.preguntas);
   const [guardado, setGuardado] = useState(false);
+
+  const updatePregunta = (idx: number, patch: Partial<PreguntaEncuesta>) => {
+    setPreguntas((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+  };
+  const addPregunta = () =>
+    setPreguntas((prev) => [...prev, { id: crypto.randomUUID(), texto: '', tipo: 'texto', obligatoria: false }]);
+  const removePregunta = (idx: number) => setPreguntas((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.preguntaSatisfaccion.trim() || !form.preguntaRecomendacion.trim() || !form.preguntaComentario.trim()) return;
-    actualizarConfigEncuesta({
-      preguntaSatisfaccion: form.preguntaSatisfaccion.trim(),
-      preguntaRecomendacion: form.preguntaRecomendacion.trim(),
-      preguntaComentario: form.preguntaComentario.trim(),
-    });
+    const validas = preguntas.filter((p) => p.texto.trim());
+    if (validas.length === 0) return;
+    actualizarConfigEncuesta({ preguntas: validas.map((p) => ({ ...p, texto: p.texto.trim() })) });
+    setPreguntas(validas.map((p) => ({ ...p, texto: p.texto.trim() })));
     setGuardado(true);
     setTimeout(() => setGuardado(false), 2500);
   };
@@ -98,37 +109,47 @@ function AdminEncuesta() {
         Encuesta de satisfacción
       </div>
       <div className="muted" style={{ fontSize: 12.5, marginBottom: 16 }}>
-        Esta encuesta es obligatoria para obtener el certificado al terminar cualquier curso. Edita aquí el texto de
-        las preguntas — aplica a todos los cursos por igual.
+        Esta encuesta es obligatoria para obtener el certificado al terminar cualquier curso. Agrega, edita o quita
+        preguntas — aplica a todos los cursos por igual.
       </div>
       <form onSubmit={handleSubmit}>
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label htmlFor="encuesta-satisfaccion">Pregunta de satisfacción (estrellas)</label>
-          <input
-            id="encuesta-satisfaccion"
-            required
-            value={form.preguntaSatisfaccion}
-            onChange={(e) => setForm((f) => ({ ...f, preguntaSatisfaccion: e.target.value }))}
-          />
-        </div>
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label htmlFor="encuesta-recomendacion">Pregunta de recomendación (Sí/No)</label>
-          <input
-            id="encuesta-recomendacion"
-            required
-            value={form.preguntaRecomendacion}
-            onChange={(e) => setForm((f) => ({ ...f, preguntaRecomendacion: e.target.value }))}
-          />
-        </div>
-        <div className="field" style={{ marginBottom: 16 }}>
-          <label htmlFor="encuesta-comentario">Texto del comentario (opcional para la persona)</label>
-          <input
-            id="encuesta-comentario"
-            required
-            value={form.preguntaComentario}
-            onChange={(e) => setForm((f) => ({ ...f, preguntaComentario: e.target.value }))}
-          />
-        </div>
+        {preguntas.map((p, i) => (
+          <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
+            <input
+              style={{ flex: 1, minWidth: 200, padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+              value={p.texto}
+              onChange={(e) => updatePregunta(i, { texto: e.target.value })}
+              placeholder={`Pregunta ${i + 1}`}
+            />
+            <select
+              style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+              value={p.tipo}
+              onChange={(e) => updatePregunta(i, { tipo: e.target.value as PreguntaEncuesta['tipo'] })}
+            >
+              {(Object.keys(TIPO_PREGUNTA_LABEL) as PreguntaEncuesta['tipo'][]).map((tipo) => (
+                <option key={tipo} value={tipo}>
+                  {TIPO_PREGUNTA_LABEL[tipo]}
+                </option>
+              ))}
+            </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, whiteSpace: 'nowrap' }}>
+              <input
+                type="checkbox"
+                checked={p.obligatoria}
+                onChange={(e) => updatePregunta(i, { obligatoria: e.target.checked })}
+              />
+              Obligatoria
+            </label>
+            {preguntas.length > 1 && (
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => removePregunta(i)}>
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" className="btn btn-outline btn-sm" onClick={addPregunta} style={{ marginBottom: 16 }}>
+          + Agregar pregunta
+        </button>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button className="btn btn-accent" type="submit">
             Guardar cambios

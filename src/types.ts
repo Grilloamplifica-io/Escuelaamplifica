@@ -70,24 +70,29 @@ export interface NuevoCertificadoExternoInput {
   archivoDataUrl?: string;
 }
 
+export type TipoRespuesta = string | number | boolean;
+
 export interface EncuestaSatisfaccion {
   cursoId: string;
-  puntaje: number;
-  recomendaria: boolean;
-  comentario?: string;
+  respuestas: Record<string, TipoRespuesta>;
   fecha: string;
 }
 
 export interface NuevaEncuestaInput {
-  puntaje: number;
-  recomendaria: boolean;
-  comentario?: string;
+  respuestas: Record<string, TipoRespuesta>;
+}
+
+export type TipoPreguntaEncuesta = 'estrellas' | 'si_no' | 'texto';
+
+export interface PreguntaEncuesta {
+  id: string;
+  texto: string;
+  tipo: TipoPreguntaEncuesta;
+  obligatoria: boolean;
 }
 
 export interface ConfigEncuesta {
-  preguntaSatisfaccion: string;
-  preguntaRecomendacion: string;
-  preguntaComentario: string;
+  preguntas: PreguntaEncuesta[];
 }
 
 export interface Usuario {
