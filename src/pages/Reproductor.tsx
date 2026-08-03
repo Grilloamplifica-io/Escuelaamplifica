@@ -17,16 +17,23 @@ export function Reproductor() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const me = useCurrentUser();
-  const { aprobarCurso } = useApp();
+  const { aprobarCurso, actualizarProgresoCurso } = useApp();
   const c = useCurso(id);
   const [moduloIdx, setModuloIdx] = useState(0);
   const [checklistDone, setChecklistDone] = useState<Record<number, boolean>>({});
   const [videoListo, setVideoListo] = useState(false);
   const [, setSegundosRestantes] = useState(0);
 
+  // Al entrar (o volver) a un curso, retoma el módulo donde había quedado en vez de
+  // reiniciar siempre en el primero, usando el % de avance guardado en el usuario.
   useEffect(() => {
-    setModuloIdx(0);
+    const pct = me.progreso[c.id] ?? 0;
+    const idxGuardado = c.modulos.length > 0 ? Math.round((pct / 100) * c.modulos.length) : 0;
+    const idxInicial = Math.max(0, Math.min(idxGuardado, c.modulos.length - 1));
+    setModuloIdx(idxInicial);
     setChecklistDone({});
+    actualizarProgresoCurso(me.id, c.id, idxInicial, c.modulos.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const idx = Math.min(moduloIdx, c.modulos.length - 1);
@@ -38,6 +45,7 @@ export function Reproductor() {
   const goToModulo = (next: number) => {
     setModuloIdx(next);
     setChecklistDone({});
+    actualizarProgresoCurso(me.id, c.id, next, c.modulos.length);
   };
 
   // Cada módulo de video exige haberlo visto completo antes de habilitar "continuar"/

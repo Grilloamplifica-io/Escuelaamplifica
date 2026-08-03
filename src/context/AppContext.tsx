@@ -27,6 +27,7 @@ interface AppContextValue {
   asignarCursoAUsuario: (userId: string, cursoId: string) => void;
   quitarCursoDeUsuario: (userId: string, cursoId: string) => void;
   reiniciarCursoDeUsuario: (userId: string, cursoId: string) => void;
+  actualizarProgresoCurso: (userId: string, cursoId: string, moduloIdx: number, totalModulos: number) => void;
   aprobarCurso: (userId: string, cursoId: string) => Certificado;
   addCertificadoExterno: (userId: string, input: NuevoCertificadoExternoInput) => CertificadoExterno;
   eliminarCertificadoExterno: (userId: string, certId: string) => void;
@@ -211,6 +212,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
         };
       });
     },
+    actualizarProgresoCurso: (userId, cursoId, moduloIdx, totalModulos) => {
+      setUsers((prev) => {
+        const u = prev[userId];
+        if (!u || !u.asign[cursoId] || u.asign[cursoId] === 'aprobado') return prev;
+        const pct = totalModulos > 0 ? Math.round((moduloIdx / totalModulos) * 100) : 0;
+        if (u.asign[cursoId] === 'desarrollo' && u.progreso[cursoId] === pct) return prev;
+        return {
+          ...prev,
+          [userId]: {
+            ...u,
+            asign: { ...u.asign, [cursoId]: 'desarrollo' },
+            progreso: { ...u.progreso, [cursoId]: pct },
+          },
+        };
+      });
+    },
     aprobarCurso: (userId, cursoId) => {
       const existente = users[userId]?.cert.find((c) => c.cursoId === cursoId);
       const certificado: Certificado = existente ?? {
@@ -227,6 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           [userId]: {
             ...u,
             asign: { ...u.asign, [cursoId]: 'aprobado' },
+            progreso: { ...u.progreso, [cursoId]: 100 },
             cert: yaCertificado ? u.cert : [...u.cert, certificado],
           },
         };
