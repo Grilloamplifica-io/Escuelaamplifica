@@ -1076,6 +1076,7 @@ function CursoCamposForm({
   onCancel?: () => void;
 }) {
   const [form, setForm] = useState<NuevoCursoInput>(valorInicial);
+  const [leccionAbierta, setLeccionAbierta] = useState<Record<number, boolean>>({});
 
   const updateModulo = (idx: number, patch: Partial<Modulo>) => {
     setForm((f) => ({ ...f, modulos: f.modulos.map((m, i) => (i === idx ? { ...m, ...patch } : m)) }));
@@ -1086,7 +1087,18 @@ function CursoCamposForm({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const modulosValidos = form.modulos.filter((m) => m.t.trim());
+    const listaLimpia = (lista?: string[]) => {
+      const limpia = (lista ?? []).map((v) => v.trim()).filter(Boolean);
+      return limpia.length ? limpia : undefined;
+    };
+    const modulosValidos = form.modulos
+      .filter((m) => m.t.trim())
+      .map((m) => ({
+        ...m,
+        objetivos: listaLimpia(m.objetivos),
+        conclusiones: listaLimpia(m.conclusiones),
+        contenido: m.contenido?.trim() || undefined,
+      }));
     if (!form.nombre.trim() || !form.duracion.trim() || !form.nivel.trim() || modulosValidos.length === 0) return;
     onSubmit({ ...form, modulos: modulosValidos });
   };
@@ -1231,6 +1243,67 @@ function CursoCamposForm({
                   </span>
                 </div>
               )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            style={{ marginTop: 8 }}
+            onClick={() => setLeccionAbierta((prev) => ({ ...prev, [i]: !prev[i] }))}
+          >
+            {leccionAbierta[i] ? 'Ocultar contenido de la lección' : '+ Contenido de la lección (opcional)'}
+          </button>
+
+          {leccionAbierta[i] && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="field">
+                <label htmlFor={`${idPrefix}-modulo-${i}-tiempo`}>Tiempo estimado (min)</label>
+                <input
+                  id={`${idPrefix}-modulo-${i}-tiempo`}
+                  type="number"
+                  min={0}
+                  style={{ width: 120 }}
+                  value={m.tiempoEstimadoMinutos ?? ''}
+                  onChange={(e) =>
+                    updateModulo(i, { tiempoEstimadoMinutos: e.target.value ? Number(e.target.value) : undefined })
+                  }
+                  placeholder="Ej: 8"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor={`${idPrefix}-modulo-${i}-objetivos`}>Objetivos de aprendizaje (uno por línea)</label>
+                <textarea
+                  id={`${idPrefix}-modulo-${i}-objetivos`}
+                  rows={3}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+                  value={(m.objetivos ?? []).join('\n')}
+                  onChange={(e) => updateModulo(i, { objetivos: e.target.value.split('\n') })}
+                  placeholder={'Ej:\nDefine el concepto X\nDistingue entre A y B'}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor={`${idPrefix}-modulo-${i}-contenido`}>Contenido / texto de apoyo</label>
+                <textarea
+                  id={`${idPrefix}-modulo-${i}-contenido`}
+                  rows={4}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+                  value={m.contenido ?? ''}
+                  onChange={(e) => updateModulo(i, { contenido: e.target.value })}
+                  placeholder="Texto explicativo que acompaña al video o documento (opcional)"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor={`${idPrefix}-modulo-${i}-conclusiones`}>Conclusiones clave (una por línea)</label>
+                <textarea
+                  id={`${idPrefix}-modulo-${i}-conclusiones`}
+                  rows={3}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1px solid var(--border)', fontSize: 13.5, fontFamily: 'inherit' }}
+                  value={(m.conclusiones ?? []).join('\n')}
+                  onChange={(e) => updateModulo(i, { conclusiones: e.target.value.split('\n') })}
+                  placeholder={'Ej:\nLa idea principal es...\nRecuerda siempre...'}
+                />
+              </div>
             </div>
           )}
         </div>

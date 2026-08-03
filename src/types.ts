@@ -7,6 +7,10 @@ export interface Modulo {
   archivoUrl?: string;
   archivoNombre?: string;
   duracionSegundos?: number;
+  tiempoEstimadoMinutos?: number;
+  objetivos?: string[];
+  contenido?: string;
+  conclusiones?: string[];
 }
 
 export interface QuizPregunta {

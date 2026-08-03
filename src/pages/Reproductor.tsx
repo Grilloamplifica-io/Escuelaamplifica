@@ -114,7 +114,28 @@ export function Reproductor() {
       <div className="grid cols-2">
         <div>
           <div className="eyebrow">{c.nombre}</div>
-          <h2 style={{ marginBottom: 14 }}>{m.t}</h2>
+          <h2 style={{ marginBottom: 8 }}>{m.t}</h2>
+
+          {m.tiempoEstimadoMinutos && (
+            <div className="muted" style={{ fontSize: 12.5, marginBottom: 12 }}>
+              Tiempo estimado: {m.tiempoEstimadoMinutos} minuto{m.tiempoEstimadoMinutos === 1 ? '' : 's'}
+            </div>
+          )}
+
+          {m.objetivos && m.objetivos.length > 0 && (
+            <div className="card" style={{ textAlign: 'left', marginBottom: 16 }}>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>
+                Objetivos de aprendizaje
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13.5 }}>
+                {m.objetivos.map((o, i) => (
+                  <li key={i} style={{ marginBottom: 4 }}>
+                    {o}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {m.tipo === 'checklist' ? (
             <div className="card" style={{ textAlign: 'left' }}>
@@ -184,6 +205,31 @@ export function Reproductor() {
           {m.tipo === 'video' && !videoListo && (
             <div className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>
               Debes terminar de ver el video para poder continuar.
+            </div>
+          )}
+
+          {m.contenido && (
+            <div style={{ marginTop: 16, textAlign: 'left', fontSize: 13.5, lineHeight: 1.6 }}>
+              {m.contenido.split('\n').filter((p) => p.trim()).map((parrafo, i) => (
+                <p key={i} style={{ marginBottom: 10 }}>
+                  {parrafo}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {m.conclusiones && m.conclusiones.length > 0 && (
+            <div className="card" style={{ textAlign: 'left', marginTop: 16 }}>
+              <div className="eyebrow" style={{ marginBottom: 8 }}>
+                Conclusiones clave
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13.5 }}>
+                {m.conclusiones.map((cl, i) => (
+                  <li key={i} style={{ marginBottom: 4 }}>
+                    {cl}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
