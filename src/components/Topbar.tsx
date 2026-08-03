@@ -35,7 +35,7 @@ export function Topbar() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <img src={logoAmplifica} alt="Amplifica" style={{ height: 20, width: 'auto' }} />
         <div className="crumb">
-          Academia Corporativa / <b>{titleForPath(location.pathname)}</b>
+          Amplifica Academy / <b>{titleForPath(location.pathname)}</b>
         </div>
       </div>
       <div className="topbar-right">

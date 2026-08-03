@@ -53,11 +53,11 @@ export function Login() {
             }}
           />
           <span className="brand-title" style={{ color: 'var(--ink)' }}>
-            Amplifica
+            Amplifica Academy
           </span>
         </div>
         <div className="muted" style={{ textAlign: 'center', fontSize: 12.5, marginBottom: 22 }}>
-          Ingresa a la Academia Corporativa
+          Ingresa a Amplifica Academy
         </div>
 
         <form onSubmit={handleSubmit}>

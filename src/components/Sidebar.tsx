@@ -11,8 +11,8 @@ export function Sidebar() {
       <div className="brand">
         <span className="mark" />
         <div>
-          <div className="brand-title">Amplifica</div>
-          <div className="brand-sub">Academia Corporativa</div>
+          <div className="brand-title">Amplifica Academy</div>
+          <div className="brand-sub">Plataforma de Capacitación</div>
         </div>
       </div>
       <div className="navgroup-label">Navegación</div>

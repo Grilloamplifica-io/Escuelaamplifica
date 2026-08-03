@@ -21,7 +21,7 @@ export function Certificado() {
       <div className="cert">
         <div className="cert-top">
           <div className="display" style={{ fontSize: 15, letterSpacing: 1, textTransform: 'uppercase' }}>
-            Academia Amplifica
+            Amplifica Academy
           </div>
           <div style={{ fontSize: 11, opacity: 0.7 }}>Certificado de aprobación</div>
         </div>
